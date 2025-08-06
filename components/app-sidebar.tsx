@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Command, Film, LifeBuoy, Send, Settings } from "lucide-react";
+import { Command, Film, Settings } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
