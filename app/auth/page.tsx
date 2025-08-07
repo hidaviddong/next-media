@@ -8,7 +8,7 @@ export default async function Page() {
     headers: await headers(),
   });
   if (session) {
-    redirect("/");
+    redirect("/dashboard");
   }
 
   return (

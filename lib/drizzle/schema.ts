@@ -57,9 +57,57 @@ export const verification = sqliteTable("verification", {
   value: text("value").notNull(),
   expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => /* @__PURE__ */ new Date(),
+    () => /* @__PURE__ */ new Date()
   ),
   updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(
-    () => /* @__PURE__ */ new Date(),
+    () => /* @__PURE__ */ new Date()
+  ),
+});
+
+export const scanPathTable = sqliteTable("scan_path", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  path: text("path").notNull().unique(), // 路径，如 "~/Downloads/A"
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
+    () => new Date()
+  ),
+});
+
+export const moviesTable = sqliteTable("movie", {
+  id: integer("id").primaryKey().notNull(),
+  title: text("title").notNull(),
+  year: text("year").notNull(),
+  overview: text("overview").notNull(),
+  poster: text("poster").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  scanPathId: text("scan_path_id")
+    .notNull()
+    .references(() => scanPathTable.id, { onDelete: "cascade" }),
+  folderName: text("folder_name").notNull(), // 原始文件夹名称
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
+    () => new Date()
+  ),
+});
+
+export const scanJobTable = sqliteTable("scan_job", {
+  id: text("id").primaryKey(),
+  scanPathId: text("scan_path_id")
+    .notNull()
+    .references(() => scanPathTable.id, { onDelete: "cascade" }),
+  status: text("status", {
+    enum: ["running", "completed", "failed"],
+  }).notNull(),
+  totalFolders: integer("total_folders").notNull().default(0),
+  processedFolders: integer("processed_folders").notNull().default(0),
+  successfulFolders: integer("successful_folders").notNull().default(0),
+  failedFolders: integer("failed_folders").notNull().default(0),
+  errorMessage: text("error_message"),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
+    () => new Date()
   ),
 });
