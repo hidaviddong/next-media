@@ -18,10 +18,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Loader2, Plus, X } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAtom } from "jotai";
 import { addFolderDialogOpenAtom } from "@/lib/store";
 import { BadRequestError } from "@/lib/error";
+import QueueStatus from "./queue-status";
 
 export interface Movie {
   name: string;
@@ -31,7 +32,10 @@ export interface Movie {
 interface ScanMoviesResponse {
   data: Array<Movie>;
 }
+
 export default function AddFolderDialog() {
+  const [showQueueStatus, setShowQueueStatus] = useState(false);
+  const queryClient = useQueryClient();
   const [addFolderDialogOpen, setAddFolderDialogOpen] = useAtom(
     addFolderDialogOpenAtom
   );
@@ -77,6 +81,7 @@ export default function AddFolderDialog() {
       },
       onSuccess: () => {
         toast.success("Movies queued successfully");
+        queryClient.invalidateQueries({ queryKey: ["queue-status"] });
       },
       onError: (error) => {
         toast.error(error.message);
@@ -101,13 +106,14 @@ export default function AddFolderDialog() {
       return;
     }
     queueMoviesMutate({ movies: parsedMovies });
-    setAddFolderDialogOpen(false);
+    setShowQueueStatus(true);
     setFolderPath("");
     setParsedMovies([]);
   };
 
   const handleCancel = () => {
     setAddFolderDialogOpen(false);
+    setShowQueueStatus(false);
     setFolderPath("");
     setParsedMovies([]);
   };
@@ -115,11 +121,10 @@ export default function AddFolderDialog() {
   if (!isMobile) {
     return (
       <Dialog open={addFolderDialogOpen} onOpenChange={setAddFolderDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[1000px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Folder</DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="folder" className="text-sm font-medium">
@@ -172,6 +177,8 @@ export default function AddFolderDialog() {
                 </div>
               </div>
             )}
+
+            {showQueueStatus && <QueueStatus />}
 
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={handleCancel}>
@@ -254,6 +261,8 @@ export default function AddFolderDialog() {
                 </div>
               </div>
             )}
+
+            {showQueueStatus && <QueueStatus />}
 
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={handleCancel}>
