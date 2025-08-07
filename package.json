@@ -2,13 +2,15 @@
   "name": "next-media",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently --names \"Redis\",\"Next.js\" \"npm run dev:redis\" \"next dev\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "db:push": "npx drizzle-kit push",
-    "db:studio": "npx drizzle-kit studio"
+    "db:studio": "npx drizzle-kit studio",
+    "dev:redis": "tsx scripts/worker.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -43,13 +45,16 @@
     "@tanstack/react-query": "^5.84.1",
     "@tanstack/react-query-devtools": "^5.84.1",
     "better-auth": "^1.3.4",
+    "bullmq": "^5.56.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.4",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
+    "ioredis": "^5.7.0",
     "jotai": "^2.13.0",
     "lucide-react": "^0.536.0",
     "next": "15.4.5",
@@ -73,11 +78,13 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.0",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9",
     "eslint-config-next": "15.4.5",
     "eslint-config-prettier": "^10.1.8",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
     "tw-animate-css": "^1.3.6",
     "typescript": "^5"
   }

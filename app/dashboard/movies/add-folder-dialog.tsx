@@ -15,67 +15,80 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { parseMoviesFolder } from "./actions";
-import { useActionState } from "react";
 import { toast } from "sonner";
-import { useEffect, useState, startTransition } from "react";
-import { Plus, X } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Plus, X } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { useAtom } from "jotai";
+import { addFolderDialogOpenAtom } from "@/lib/store";
+import { BadRequestError } from "@/lib/error";
 
-type ActionState = {
-  error?: string;
-  values: { folder: string };
-  movies?: Array<{ name: string; year?: string }>;
-};
-
-interface AddFolderDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (movies: Array<{ name: string; year?: string }>) => void;
+export interface Movie {
+  name: string;
+  year?: string;
+  path: string;
 }
-
-export default function AddFolderDialog({
-  open,
-  onOpenChange,
-  onSubmit,
-}: AddFolderDialogProps) {
+interface ScanMoviesResponse {
+  data: Array<Movie>;
+}
+export default function AddFolderDialog() {
+  const [addFolderDialogOpen, setAddFolderDialogOpen] = useAtom(
+    addFolderDialogOpenAtom
+  );
   const isMobile = useIsMobile();
-  const isDesktop = !isMobile;
   const [folderPath, setFolderPath] = useState("");
-  const [parsedMovies, setParsedMovies] = useState<
-    Array<{ name: string; year?: string }>
-  >([]);
+  const [parsedMovies, setParsedMovies] = useState<Array<Movie>>([]);
 
-  const [state, formAction, isPending] = useActionState(parseMoviesFolder, {
-    values: { folder: "" },
-  });
+  const { mutate: scanMoviesMutate, isPending: isScanMoviesPending } =
+    useMutation({
+      mutationFn: async (body: { folderPath: string }) => {
+        const response = await fetch("/api/movies/scan", {
+          method: "POST",
+          body: JSON.stringify(body),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
 
-  // Listen for errors and show toast
-  useEffect(() => {
-    if (state.error) {
-      toast.error(state.error);
-    }
-  }, [state.error]);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new BadRequestError(errorData.error);
+        }
+        return response.json() as Promise<ScanMoviesResponse>;
+      },
+      onSuccess: (data) => {
+        setParsedMovies(data.data);
+      },
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    });
 
-  // Listen for success state
-  useEffect(() => {
-    if (state.movies && state.movies.length > 0) {
-      setParsedMovies(state.movies);
-      toast.success(`Successfully parsed ${state.movies.length} movies`);
-    }
-  }, [state.movies]);
+  const { mutate: queueMoviesMutate, isPending: isQueueMoviesPending } =
+    useMutation({
+      mutationFn: async (body: { movies: Array<Movie> }) => {
+        await fetch("/api/movies/queue", {
+          method: "POST",
+          body: JSON.stringify(body),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+      },
+      onSuccess: () => {
+        toast.success("Movies queued successfully");
+      },
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    });
 
   const handleAddFolder = () => {
     if (!folderPath.trim()) {
       toast.error("Please enter a folder path");
       return;
     }
-
-    const formData = new FormData();
-    formData.append("folder", folderPath);
-
-    startTransition(() => {
-      formAction(formData);
-    });
+    scanMoviesMutate({ folderPath });
   };
 
   const handleRemoveMovie = (index: number) => {
@@ -87,30 +100,27 @@ export default function AddFolderDialog({
       toast.error("Please add at least one movie folder");
       return;
     }
-    onSubmit(parsedMovies);
-    onOpenChange(false);
-    // Reset state
+    queueMoviesMutate({ movies: parsedMovies });
+    setAddFolderDialogOpen(false);
     setFolderPath("");
     setParsedMovies([]);
   };
 
   const handleCancel = () => {
-    onOpenChange(false);
-    // Reset state
+    setAddFolderDialogOpen(false);
     setFolderPath("");
     setParsedMovies([]);
   };
 
-  if (isDesktop) {
+  if (!isMobile) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={addFolderDialogOpen} onOpenChange={setAddFolderDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Folder</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Add Folder Input */}
             <div className="space-y-2">
               <label htmlFor="folder" className="text-sm font-medium">
                 Folder Path
@@ -121,11 +131,10 @@ export default function AddFolderDialog({
                   value={folderPath}
                   onChange={(e) => setFolderPath(e.target.value)}
                   placeholder="Enter movie folder path"
-                  onKeyPress={(e) => e.key === "Enter" && handleAddFolder()}
                 />
                 <Button
                   onClick={handleAddFolder}
-                  disabled={isPending || !folderPath.trim()}
+                  disabled={isScanMoviesPending}
                   size="icon"
                 >
                   <Plus className="h-4 w-4" />
@@ -133,7 +142,6 @@ export default function AddFolderDialog({
               </div>
             </div>
 
-            {/* Parsed Movies List */}
             {parsedMovies.length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Parsed Movies:</h3>
@@ -165,16 +173,19 @@ export default function AddFolderDialog({
               </div>
             )}
 
-            {/* Action Buttons */}
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={parsedMovies.length === 0}
+                disabled={parsedMovies.length === 0 || isQueueMoviesPending}
               >
-                Submit
+                {isQueueMoviesPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Submit"
+                )}
               </Button>
             </div>
           </div>
@@ -184,7 +195,7 @@ export default function AddFolderDialog({
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={addFolderDialogOpen} onOpenChange={setAddFolderDialogOpen}>
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
@@ -192,7 +203,6 @@ export default function AddFolderDialog({
           </DrawerHeader>
 
           <div className="p-4 space-y-4">
-            {/* Add Folder Input */}
             <div className="space-y-2">
               <label htmlFor="folder" className="text-sm font-medium">
                 Folder Path
@@ -203,11 +213,10 @@ export default function AddFolderDialog({
                   value={folderPath}
                   onChange={(e) => setFolderPath(e.target.value)}
                   placeholder="Enter movie folder path"
-                  onKeyPress={(e) => e.key === "Enter" && handleAddFolder()}
                 />
                 <Button
                   onClick={handleAddFolder}
-                  disabled={isPending || !folderPath.trim()}
+                  disabled={isScanMoviesPending}
                   size="icon"
                 >
                   <Plus className="h-4 w-4" />
@@ -215,7 +224,6 @@ export default function AddFolderDialog({
               </div>
             </div>
 
-            {/* Parsed Movies List */}
             {parsedMovies.length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Parsed Movies:</h3>
@@ -247,16 +255,19 @@ export default function AddFolderDialog({
               </div>
             )}
 
-            {/* Action Buttons */}
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={parsedMovies.length === 0}
+                disabled={parsedMovies.length === 0 || isQueueMoviesPending}
               >
-                Submit
+                {isQueueMoviesPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Submit"
+                )}
               </Button>
             </div>
           </div>
