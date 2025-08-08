@@ -1,57 +1,133 @@
 import "dotenv/config";
-import { Worker } from "bullmq";
+import { type Job, Worker } from "bullmq";
 import { connection } from "../lib/redis";
+import { library, movie } from "@/lib/drizzle/schema";
+import { and, eq } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { nanoid } from "nanoid";
+import { TMDB_BASE_URL } from "@/lib/constant";
 
-const TMDB_BASE_URL = "https://api.themoviedb.org/3";
-const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN!;
 
 interface TmdbApiRequestJob {
-  name: string;
-  year: string;
+  userId: string;
+  libraryPath: string; // 库的根路径, e.g., "/data/movies"
+  folderName: string; // 这部电影的原始文件夹名, e.g., "The Matrix 1999"
+  movieTitle: string; // 从文件夹名解析出的电影标题
+  year: string; // 从文件夹名解析出的年份
 }
 
-interface TmdbMovie {
+export interface TmdbMovieResponse {
+  adult: boolean;
+  backdrop_path: string;
+  genre_ids: number[];
   id: number;
-  title: string;
-  year: string;
+  original_language: string;
+  original_title: string;
   overview: string;
-  poster: string;
-}
-
-export async function searchMovieByTitle(
-  title: string,
-  year?: string
-): Promise<TmdbMovie | null> {
-  const url = `${TMDB_BASE_URL}/search/movie?query=${encodeURIComponent(
-    title
-  )}${year ? `&year=${year}` : ""}`;
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${TMDB_ACCESS_TOKEN}`,
-    },
-  });
-  if (!res.ok) throw new Error(`TMDB fetch failed: ${res.statusText}`);
-  const data = await res.json();
-  const first = data.results?.[0]; // 用第一个结果展示
-  if (!first) return null;
-  return {
-    id: first.id,
-    title: first.original_title,
-    year: first.release_date?.split("-")[0] || "",
-    overview: first.overview,
-    poster: first.poster_path
-      ? `${TMDB_IMAGE_BASE_URL}${first.poster_path}`
-      : "",
-  };
+  popularity: number;
+  poster_path: string;
+  release_date: string;
+  title: string;
+  video: boolean;
+  vote_average: number;
+  vote_count: number;
 }
 
 export const tmdbApiRequestWorker = new Worker(
   "tmdb-api-requests",
-  async (job) => {
-    const { name, year } = job.data as TmdbApiRequestJob;
-    console.log(`${name} ${year} 去请求 tmdb api`);
+  async (job: Job<TmdbApiRequestJob>) => {
+    const { userId, libraryPath, folderName, movieTitle, year } = job.data;
+    console.log(`Processing job ${job.id}: ${folderName}`);
+
+    // =================================================================
+    // 1. 检查用户对应的library是否存在, 不存在则创建
+    // =================================================================
+
+    let lib = await db.query.library.findFirst({
+      where: and(eq(library.path, libraryPath), eq(library.userId, userId)),
+    });
+
+    if (!lib) {
+      console.log(
+        `Library path "${libraryPath}" not found for user. Creating...`
+      );
+      const newLibraries = await db
+        .insert(library)
+        .values({
+          id: nanoid(),
+          path: libraryPath,
+          userId: userId,
+        })
+        .returning();
+      lib = newLibraries[0];
+      console.log(`Library created with ID: ${lib.id}`);
+    }
+
+    // =================================================================
+    // 2. 检查电影是否已存在于此库中 (防止重复处理)
+    // =================================================================
+    const existingMovie = await db.query.movie.findFirst({
+      where: and(eq(movie.libraryId, lib.id), eq(movie.folderName, folderName)),
+    });
+
+    if (existingMovie) {
+      console.log(
+        `Movie "${folderName}" already exists in the database. Skipping.`
+      );
+      return { message: "Movie already exists." };
+    }
+
+    // =================================================================
+    // 3. 请求 TMDB API
+    // =================================================================
+    console.log(`Fetching TMDB data for: "${movieTitle}" (${year})`);
+    const url = `${TMDB_BASE_URL}/search/movie?query=${encodeURIComponent(
+      movieTitle
+    )}${year ? `&year=${year}` : ""}`;
+
+    const res = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${TMDB_ACCESS_TOKEN}`,
+      },
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(
+        `TMDB API request failed with status ${res.status}: ${errorText}`
+      );
+    }
+
+    const data = await res.json();
+    const tmdbResult = data.results?.[0] as TmdbMovieResponse;
+
+    if (!tmdbResult) {
+      throw new Error(`No movie found on TMDB for query: "${movieTitle}"`);
+    }
+
+    // =================================================================
+    // 4. 将获取到的数据存入数据库
+    // =================================================================
+    console.log(`Found TMDB ID: ${tmdbResult.id}. Saving to database...`);
+
+    const newMovies = await db
+      .insert(movie)
+      .values({
+        id: nanoid(),
+        tmdbId: tmdbResult.id,
+        name: tmdbResult.original_title,
+        folderName: folderName,
+        year: tmdbResult.release_date,
+        overview: tmdbResult.overview,
+        poster: tmdbResult.poster_path,
+        libraryId: lib.id,
+      })
+      .returning();
+
+    console.log(`Successfully saved movie "${newMovies[0].name}" to database.`);
+    return newMovies[0]; // 将新创建的电影对象作为job的成功结果返回
   },
   {
     connection,

@@ -14,11 +14,24 @@ function parseMovieFolder(folder: string) {
   return { name, year };
 }
 
+export interface ScanMoviesRequest {
+  libraryPath: string;
+  folderName: string;
+  movieTitle: string;
+  year: string;
+}
+export interface ScanMoviesReponse {
+  data: Array<{
+    folderName: string;
+    name: string;
+    year: string;
+  }>;
+}
 export async function POST(req: NextRequest) {
   try {
     const scanFolders = [];
-    const { folderPath } = await req.json();
-    const entries = await fs.readdir(folderPath, { withFileTypes: true });
+    const { libraryPath } = await req.json();
+    const entries = await fs.readdir(libraryPath, { withFileTypes: true });
     const movieFoldersList = entries
       .filter((e) => e.isDirectory())
       .map((e) => e.name);
@@ -26,7 +39,7 @@ export async function POST(req: NextRequest) {
       const parsed = parseMovieFolder(movieFolder);
       if (!parsed) continue;
       scanFolders.push({
-        path: path.join(folderPath, movieFolder),
+        folderName: movieFolder,
         name: parsed.name,
         year: parsed.year,
       });

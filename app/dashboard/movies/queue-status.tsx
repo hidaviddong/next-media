@@ -65,13 +65,7 @@ export default function QueueStatus() {
 
   const { stats: queueNumbers, details: queueDetails } = queueData;
 
-  const totalJobs =
-    queueNumbers.active +
-    queueNumbers.waiting +
-    queueNumbers.failed +
-    queueNumbers.completed;
-
-  if (totalJobs === 0) {
+  if (queueNumbers.waiting === 0) {
     return null;
   }
 

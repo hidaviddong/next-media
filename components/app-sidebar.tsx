@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Command, Film, Settings } from "lucide-react";
+import { Command, LibrarySquare, Settings } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
@@ -20,9 +20,9 @@ import { authClient } from "@/lib/auth-client";
 const data = {
   navMain: [
     {
-      title: "Film",
+      title: "Library",
       url: "/",
-      icon: Film,
+      icon: LibrarySquare,
       isActive: true,
       items: [
         {

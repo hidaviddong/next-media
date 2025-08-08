@@ -1,15 +1,25 @@
 import { tmdbApiRequestQueue } from "@/lib/redis";
 import { NextRequest, NextResponse } from "next/server";
-import { type Movie } from "@/app/dashboard/movies/add-folder-dialog";
+import { type ScanMoviesRequest } from "../scan/route";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export async function POST(req: NextRequest) {
-  const { movies } = await req.json();
-  console.log("movies is", movies);
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  if (!session?.user.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const { movies } = (await req.json()) as { movies: ScanMoviesRequest[] };
   try {
     tmdbApiRequestQueue.addBulk(
-      movies.map((movie: Movie) => ({
+      movies.map((movie) => ({
         name: "tmdb-api-request",
-        data: movie,
+        data: {
+          ...movie,
+          userId: session?.user.id,
+        },
       }))
     );
     return NextResponse.json({ success: true }, { status: 200 });

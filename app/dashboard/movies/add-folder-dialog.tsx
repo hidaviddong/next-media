@@ -22,30 +22,25 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAtom } from "jotai";
 import { addFolderDialogOpenAtom } from "@/lib/store";
 import { BadRequestError } from "@/lib/error";
-import QueueStatus from "./queue-status";
-
-export interface Movie {
-  name: string;
-  year?: string;
-  path: string;
-}
-interface ScanMoviesResponse {
-  data: Array<Movie>;
-}
+import {
+  type ScanMoviesReponse,
+  type ScanMoviesRequest,
+} from "@/app/api/movies/scan/route";
 
 export default function AddFolderDialog() {
-  const [showQueueStatus, setShowQueueStatus] = useState(false);
   const queryClient = useQueryClient();
   const [addFolderDialogOpen, setAddFolderDialogOpen] = useAtom(
     addFolderDialogOpenAtom
   );
   const isMobile = useIsMobile();
-  const [folderPath, setFolderPath] = useState("");
-  const [parsedMovies, setParsedMovies] = useState<Array<Movie>>([]);
+  const [libraryPath, setLibraryPath] = useState("");
+  const [parsedMovies, setParsedMovies] = useState<
+    Array<ScanMoviesReponse["data"][number]>
+  >([]);
 
   const { mutate: scanMoviesMutate, isPending: isScanMoviesPending } =
     useMutation({
-      mutationFn: async (body: { folderPath: string }) => {
+      mutationFn: async (body: { libraryPath: string }) => {
         const response = await fetch("/api/movies/scan", {
           method: "POST",
           body: JSON.stringify(body),
@@ -58,7 +53,7 @@ export default function AddFolderDialog() {
           const errorData = await response.json();
           throw new BadRequestError(errorData.error);
         }
-        return response.json() as Promise<ScanMoviesResponse>;
+        return response.json() as Promise<ScanMoviesReponse>;
       },
       onSuccess: (data) => {
         setParsedMovies(data.data);
@@ -70,7 +65,7 @@ export default function AddFolderDialog() {
 
   const { mutate: queueMoviesMutate, isPending: isQueueMoviesPending } =
     useMutation({
-      mutationFn: async (body: { movies: Array<Movie> }) => {
+      mutationFn: async (body: { movies: Array<ScanMoviesRequest> }) => {
         await fetch("/api/movies/queue", {
           method: "POST",
           body: JSON.stringify(body),
@@ -80,7 +75,6 @@ export default function AddFolderDialog() {
         });
       },
       onSuccess: () => {
-        toast.success("Movies queued successfully");
         queryClient.invalidateQueries({ queryKey: ["queue-status"] });
       },
       onError: (error) => {
@@ -89,11 +83,11 @@ export default function AddFolderDialog() {
     });
 
   const handleAddFolder = () => {
-    if (!folderPath.trim()) {
+    if (!libraryPath.trim()) {
       toast.error("Please enter a folder path");
       return;
     }
-    scanMoviesMutate({ folderPath });
+    scanMoviesMutate({ libraryPath });
   };
 
   const handleRemoveMovie = (index: number) => {
@@ -105,16 +99,22 @@ export default function AddFolderDialog() {
       toast.error("Please add at least one movie folder");
       return;
     }
-    queueMoviesMutate({ movies: parsedMovies });
-    setShowQueueStatus(true);
-    setFolderPath("");
+    queueMoviesMutate({
+      movies: parsedMovies.map((movie) => ({
+        libraryPath,
+        folderName: movie.folderName,
+        movieTitle: movie.name,
+        year: movie.year,
+      })),
+    });
+    
+    setLibraryPath("");
     setParsedMovies([]);
   };
 
   const handleCancel = () => {
     setAddFolderDialogOpen(false);
-    setShowQueueStatus(false);
-    setFolderPath("");
+    setLibraryPath("");
     setParsedMovies([]);
   };
 
@@ -127,14 +127,14 @@ export default function AddFolderDialog() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="folder" className="text-sm font-medium">
-                Folder Path
+              <label htmlFor="library" className="text-sm font-medium">
+                Library Path
               </label>
               <div className="flex gap-2">
                 <Input
-                  id="folder"
-                  value={folderPath}
-                  onChange={(e) => setFolderPath(e.target.value)}
+                  id="library"
+                  value={libraryPath}
+                  onChange={(e) => setLibraryPath(e.target.value)}
                   placeholder="Enter movie folder path"
                 />
                 <Button
@@ -177,8 +177,6 @@ export default function AddFolderDialog() {
                 </div>
               </div>
             )}
-
-            {showQueueStatus && <QueueStatus />}
 
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={handleCancel}>
@@ -211,14 +209,14 @@ export default function AddFolderDialog() {
 
           <div className="p-4 space-y-4">
             <div className="space-y-2">
-              <label htmlFor="folder" className="text-sm font-medium">
-                Folder Path
+              <label htmlFor="library" className="text-sm font-medium">
+                Library Path
               </label>
               <div className="flex gap-2">
                 <Input
-                  id="folder"
-                  value={folderPath}
-                  onChange={(e) => setFolderPath(e.target.value)}
+                  id="library"
+                  value={libraryPath}
+                  onChange={(e) => setLibraryPath(e.target.value)}
                   placeholder="Enter movie folder path"
                 />
                 <Button
@@ -261,8 +259,6 @@ export default function AddFolderDialog() {
                 </div>
               </div>
             )}
-
-            {showQueueStatus && <QueueStatus />}
 
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={handleCancel}>
