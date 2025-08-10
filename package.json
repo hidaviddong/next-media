@@ -10,7 +10,7 @@
     "lint": "next lint",
     "db:push": "npx drizzle-kit push",
     "db:studio": "npx drizzle-kit studio",
-    "dev:redis": "tsx scripts/worker.ts"
+    "dev:redis": "tsx server/redis/worker.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",

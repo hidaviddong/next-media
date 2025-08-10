@@ -171,7 +171,7 @@ export default function QueueStatus() {
         </button>
       </div>
 
-      {true && (
+      {isExpanded && (
         <div className="mt-3 p-4 bg-gray-50/30 rounded-lg border border-gray-200/50">
           <div className="space-y-3">
             {queueDetails.active.length > 0 && (

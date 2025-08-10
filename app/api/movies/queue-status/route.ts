@@ -1,4 +1,4 @@
-import { tmdbApiRequestQueue } from "@/lib/redis";
+import { tmdbApiRequestQueue } from "@/server/redis";
 import { NextResponse } from "next/server";
 
 export async function GET() {

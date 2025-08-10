@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { movie } from "@/lib/drizzle/schema";
+import { movie } from "@/server/drizzle/schema";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
 
 type Movie = typeof movie.$inferSelect;
@@ -33,9 +33,11 @@ export function MovieCard({ movie }: { movie: Movie }) {
       <div className="overflow-hidden rounded-lg">
         <AspectRatio ratio={2 / 3} className="bg-neutral-800">
           <Image
+            priority={true}
             src={posterUrl}
             alt={`Poster for ${movie.name}`}
             fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
           />
         </AspectRatio>

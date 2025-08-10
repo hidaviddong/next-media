@@ -1,10 +1,17 @@
-import { db } from "@/lib/drizzle";
-import { movie } from "@/lib/drizzle/schema";
+import { db } from "@/server/drizzle";
+import { movie } from "@/server/drizzle/schema";
 import { desc } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 export async function GET() {
-  const movies = await db.query.movie.findMany({
-    orderBy: [desc(movie.createdAt)],
-  });
-  return NextResponse.json(movies);
+  try {
+    const movies = await db.query.movie.findMany({
+      orderBy: [desc(movie.createdAt)],
+    });
+    return NextResponse.json(movies);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
+    );
+  }
 }

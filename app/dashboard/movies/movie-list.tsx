@@ -2,7 +2,7 @@
 
 import { MovieCard } from "./movie-card";
 import { useQuery } from "@tanstack/react-query";
-import { movie } from "@/lib/drizzle/schema";
+import { movie } from "@/server/drizzle/schema";
 
 type Movie = typeof movie.$inferSelect;
 

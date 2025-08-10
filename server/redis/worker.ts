@@ -1,9 +1,9 @@
 import "dotenv/config";
 import { type Job, Worker } from "bullmq";
-import { connection } from "../lib/redis";
-import { library, movie } from "@/lib/drizzle/schema";
+import { connection } from "../redis";
+import { library, movie } from "../drizzle/schema";
 import { and, eq } from "drizzle-orm";
-import { db } from "@/lib/drizzle";
+import { db } from "../drizzle";
 import { nanoid } from "nanoid";
 import { TMDB_BASE_URL } from "@/lib/constant";
 
