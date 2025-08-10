@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently --names \"Redis\",\"Next.js\" \"npm run dev:redis\" \"next dev\"",
+    "dev": "concurrently --names \"Redis,Next.js,drizzle\" \"npm run dev:redis\" \"next dev\" \"npm run db:studio\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

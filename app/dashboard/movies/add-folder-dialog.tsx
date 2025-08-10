@@ -107,7 +107,7 @@ export default function AddFolderDialog() {
         year: movie.year,
       })),
     });
-    
+    setAddFolderDialogOpen(false);
     setLibraryPath("");
     setParsedMovies([]);
   };

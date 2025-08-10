@@ -1,12 +1,26 @@
-import { db } from "@/lib/drizzle";
-import { desc } from "drizzle-orm";
-import { movie } from "@/lib/drizzle/schema";
-import { MovieCard } from "./movie-card";
+"use client";
 
-export async function MovieList() {
-  const movies = await db.query.movie.findMany({
-    orderBy: [desc(movie.createdAt)],
+import { MovieCard } from "./movie-card";
+import { useQuery } from "@tanstack/react-query";
+import { movie } from "@/lib/drizzle/schema";
+
+type Movie = typeof movie.$inferSelect;
+
+export default function MovieList() {
+  const { data: movies } = useQuery<Movie[]>({
+    queryKey: ["movies-lists"],
+    queryFn: async () => {
+      const response = await fetch("/api/movies/lists");
+      if (!response.ok) {
+        throw new Error("Failed to fetch queue status");
+      }
+      return response.json();
+    },
   });
+
+  if (!movies) {
+    return <></>;
+  }
 
   if (movies.length === 0) {
     return (

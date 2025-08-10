@@ -35,11 +35,11 @@ export async function GET() {
         )
         .map((job) => ({
           id: job.id,
-          name: job.data.name,
+          movieTitle: job.data.movieTitle,
           year: job.data.year,
           progress: job.progress,
           timestamp: job.timestamp,
-          path: job.data.path,
+          libraryPath: job.data.libraryPath,
         })),
       waiting: queueJobs
         .filter(
@@ -50,20 +50,20 @@ export async function GET() {
         )
         .map((job) => ({
           id: job.id,
-          name: job.data.name,
+          movieTitle: job.data.movieTitle,
           year: job.data.year,
           timestamp: job.timestamp,
-          path: job.data.path,
+          libraryPath: job.data.libraryPath,
         })),
       failed: queueJobs
         .filter((job) => job.failedReason !== undefined)
         .map((job) => ({
           id: job.id,
-          name: job.data.name,
+          movieTitle: job.data.movieTitle,
           year: job.data.year,
           failedReason: job.failedReason,
           timestamp: job.timestamp,
-          path: job.data.path,
+          libraryPath: job.data.libraryPath,
         })),
       completed: queueJobs
         .filter(
@@ -72,10 +72,10 @@ export async function GET() {
         )
         .map((job) => ({
           id: job.id,
-          name: job.data.name,
+          movieTitle: job.data.movieTitle,
           year: job.data.year,
           timestamp: job.timestamp,
-          path: job.data.path,
+          libraryPath: job.data.libraryPath,
         })),
     };
 

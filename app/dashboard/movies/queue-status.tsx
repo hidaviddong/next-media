@@ -11,15 +11,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 interface QueueJob {
   id: string;
-  name: string;
+  movieTitle: string;
   year?: string;
   failedReason?: string;
   timestamp: number;
-  path?: string;
+  libraryPath?: string;
 }
 
 interface QueueData {
@@ -37,14 +36,56 @@ interface QueueData {
   };
 }
 
+const getStatusConfig = (type: keyof QueueData["stats"]) => {
+  switch (type) {
+    case "active":
+      return {
+        icon: Loader2,
+        label: "Processing",
+        color: "text-blue-600",
+        bgColor: "bg-blue-50",
+        borderColor: "border-blue-200",
+      };
+    case "waiting":
+      return {
+        icon: Clock,
+        label: "Waiting",
+        color: "text-amber-600",
+        bgColor: "bg-amber-50",
+        borderColor: "border-amber-200",
+      };
+    case "failed":
+      return {
+        icon: XCircle,
+        label: "Failed",
+        color: "text-red-600",
+        bgColor: "bg-red-50",
+        borderColor: "border-red-200",
+      };
+    case "completed":
+      return {
+        icon: CheckCircle,
+        label: "Completed",
+        color: "text-green-600",
+        bgColor: "bg-green-50",
+        borderColor: "border-green-200",
+      };
+    default:
+      return {
+        icon: Loader2,
+        label: "Unknown",
+        color: "text-gray-600",
+        bgColor: "bg-gray-50",
+        borderColor: "border-gray-200",
+      };
+  }
+};
+
 export default function QueueStatus() {
+  const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const {
-    data: queueData,
-    isLoading,
-    error,
-  } = useQuery<QueueData>({
+  const { data: queueData } = useQuery<QueueData>({
     queryKey: ["queue-status"],
     queryFn: async () => {
       const response = await fetch("/api/movies/queue-status");
@@ -56,66 +97,22 @@ export default function QueueStatus() {
     refetchInterval: (query) => {
       return query.state.data?.stats?.active === 0 ? false : 2000;
     },
-    refetchIntervalInBackground: false,
   });
+  if (!queueData) {
+    return <></>;
+  }
 
-  if (isLoading || !queueData) {
-    return null;
+  if (queueData.stats.active === 0) {
+    queryClient.invalidateQueries({ queryKey: ["movies-lists"] });
   }
 
   const { stats: queueNumbers, details: queueDetails } = queueData;
 
-  if (queueNumbers.waiting === 0) {
-    return null;
+  if (queueNumbers.waiting === 0 && queueNumbers.active === 0) {
+    return <></>;
   }
-
-  const getStatusConfig = (type: keyof typeof queueNumbers) => {
-    switch (type) {
-      case "active":
-        return {
-          icon: Loader2,
-          label: "Processing",
-          color: "text-blue-600",
-          bgColor: "bg-blue-50",
-          borderColor: "border-blue-200",
-        };
-      case "waiting":
-        return {
-          icon: Clock,
-          label: "Waiting",
-          color: "text-amber-600",
-          bgColor: "bg-amber-50",
-          borderColor: "border-amber-200",
-        };
-      case "failed":
-        return {
-          icon: XCircle,
-          label: "Failed",
-          color: "text-red-600",
-          bgColor: "bg-red-50",
-          borderColor: "border-red-200",
-        };
-      case "completed":
-        return {
-          icon: CheckCircle,
-          label: "Completed",
-          color: "text-green-600",
-          bgColor: "bg-green-50",
-          borderColor: "border-green-200",
-        };
-      default:
-        return {
-          icon: Loader2,
-          label: "Unknown",
-          color: "text-gray-600",
-          bgColor: "bg-gray-50",
-          borderColor: "border-gray-200",
-        };
-    }
-  };
-
   return (
-    <div className="mb-6">
+    <>
       <div
         className={cn(
           "inline-flex w-full items-center gap-3 px-4 py-3 rounded-lg border",
@@ -148,7 +145,13 @@ export default function QueueStatus() {
                   "border"
                 )}
               >
-                <Icon className={cn("h-3 w-3", config.color)} />
+                <Icon
+                  className={cn(
+                    "h-3 w-3",
+                    config.color,
+                    config.label === "Processing" ? "animate-spin" : ""
+                  )}
+                />
                 <span className={config.color}>{count}</span>
                 <span className="text-gray-500">{config.label}</span>
               </div>
@@ -168,7 +171,7 @@ export default function QueueStatus() {
         </button>
       </div>
 
-      {isExpanded && (
+      {true && (
         <div className="mt-3 p-4 bg-gray-50/30 rounded-lg border border-gray-200/50">
           <div className="space-y-3">
             {queueDetails.active.length > 0 && (
@@ -185,12 +188,12 @@ export default function QueueStatus() {
                     >
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-gray-800 truncate">
-                          {job.name}
+                          {job.movieTitle}
                           {job.year && ` (${job.year})`}
                         </div>
-                        {job.path && (
+                        {job.libraryPath && (
                           <div className="text-xs text-gray-500 truncate mt-1">
-                            {job.path}
+                            {job.libraryPath}
                           </div>
                         )}
                       </div>
@@ -210,12 +213,12 @@ export default function QueueStatus() {
                   {queueDetails.waiting.slice(0, 5).map((job) => (
                     <div key={job.id} className="p-2 bg-amber-50/30 rounded-md">
                       <div className="text-sm font-medium text-gray-800">
-                        {job.name}
+                        {job.movieTitle}
                         {job.year && ` (${job.year})`}
                       </div>
-                      {job.path && (
+                      {job.libraryPath && (
                         <div className="text-xs text-gray-500 truncate mt-1">
-                          {job.path}
+                          {job.libraryPath}
                         </div>
                       )}
                     </div>
@@ -239,12 +242,12 @@ export default function QueueStatus() {
                   {queueDetails.failed.slice(0, 3).map((job) => (
                     <div key={job.id} className="p-2 bg-red-50/50 rounded-md">
                       <div className="text-sm font-medium text-gray-800">
-                        {job.name}
+                        {job.movieTitle}
                         {job.year && ` (${job.year})`}
                       </div>
-                      {job.path && (
+                      {job.libraryPath && (
                         <div className="text-xs text-gray-500 truncate mt-1">
-                          {job.path}
+                          {job.libraryPath}
                         </div>
                       )}
                       {job.failedReason && (
@@ -273,12 +276,12 @@ export default function QueueStatus() {
                   {queueDetails.completed.slice(0, 5).map((job) => (
                     <div key={job.id} className="p-2 bg-green-50/30 rounded-md">
                       <div className="text-sm font-medium text-gray-800">
-                        {job.name}
+                        {job.movieTitle}
                         {job.year && ` (${job.year})`}
                       </div>
-                      {job.path && (
+                      {job.libraryPath && (
                         <div className="text-xs text-gray-500 truncate mt-1">
-                          {job.path}
+                          {job.libraryPath}
                         </div>
                       )}
                     </div>
@@ -294,6 +297,6 @@ export default function QueueStatus() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
