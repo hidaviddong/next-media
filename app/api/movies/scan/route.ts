@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
-import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
+import type { ScanMoviesRequest, ScanMoviesResponse } from "@/lib/types";
 
 function parseMovieFolder(folder: string) {
   let name = folder.trim();
@@ -14,27 +14,17 @@ function parseMovieFolder(folder: string) {
   return { name, year };
 }
 
-export interface ScanMoviesRequest {
-  libraryPath: string;
-  folderName: string;
-  movieTitle: string;
-  year: string;
-}
-export interface ScanMoviesReponse {
-  data: Array<{
-    folderName: string;
-    name: string;
-    year: string;
-  }>;
-}
 export async function POST(req: NextRequest) {
   try {
-    const scanFolders = [];
-    const { libraryPath } = await req.json();
+    const scanFolders: ScanMoviesResponse["data"] = [];
+
+    const { libraryPath }: ScanMoviesRequest = await req.json();
+
     const entries = await fs.readdir(libraryPath, { withFileTypes: true });
     const movieFoldersList = entries
       .filter((e) => e.isDirectory())
       .map((e) => e.name);
+
     for (const movieFolder of movieFoldersList) {
       const parsed = parseMovieFolder(movieFolder);
       if (!parsed) continue;
@@ -44,6 +34,7 @@ export async function POST(req: NextRequest) {
         year: parsed.year,
       });
     }
+
     return NextResponse.json({ data: scanFolders }, { status: 200 });
   } catch (error) {
     return NextResponse.json(

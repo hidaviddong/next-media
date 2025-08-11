@@ -1,6 +1,6 @@
 import { tmdbApiRequestQueue } from "@/server/redis";
 import { NextRequest, NextResponse } from "next/server";
-import { type ScanMoviesRequest } from "../scan/route";
+import type { ScanMoviesRequest } from "@/lib/types";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 

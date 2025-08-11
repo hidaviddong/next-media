@@ -1,12 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { movie } from "@/server/drizzle/schema";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
+import type { MovieSchema } from "@/lib/types";
 
-type Movie = typeof movie.$inferSelect;
-
-export function MovieCard({ movie }: { movie: Movie }) {
+interface MovieCardProps {
+  movie: MovieSchema;
+}
+export function MovieCard(props: MovieCardProps) {
+  const movie = props.movie;
   if (!movie.poster) {
     return (
       <div className="group block">

@@ -1,6 +1,6 @@
 import AddFolder from "./add-folder";
 import QueueStatus from "./queue-status";
-import MovieList from "./movie-list";
+import MovieList from "./movie-lists";
 
 export default async function MoviesPage() {
   return (

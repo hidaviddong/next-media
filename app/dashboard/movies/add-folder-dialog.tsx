@@ -14,93 +14,42 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/lib/hooks";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Loader2, Plus, X } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAtom } from "jotai";
 import { addFolderDialogOpenAtom } from "@/lib/store";
-import { BadRequestError } from "@/lib/error";
-import {
-  type ScanMoviesReponse,
-  type ScanMoviesRequest,
-} from "@/app/api/movies/scan/route";
+import { useQueueMovies, useScanMovies } from "./hooks";
 
 export default function AddFolderDialog() {
-  const queryClient = useQueryClient();
   const [addFolderDialogOpen, setAddFolderDialogOpen] = useAtom(
     addFolderDialogOpenAtom
   );
   const isMobile = useIsMobile();
   const [libraryPath, setLibraryPath] = useState("");
-  const [parsedMovies, setParsedMovies] = useState<
-    Array<ScanMoviesReponse["data"][number]>
-  >([]);
-
-  const { mutate: scanMoviesMutate, isPending: isScanMoviesPending } =
-    useMutation({
-      mutationFn: async (body: { libraryPath: string }) => {
-        const response = await fetch("/api/movies/scan", {
-          method: "POST",
-          body: JSON.stringify(body),
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new BadRequestError(errorData.error);
-        }
-        return response.json() as Promise<ScanMoviesReponse>;
-      },
-      onSuccess: (data) => {
-        setParsedMovies(data.data);
-      },
-      onError: (error) => {
-        toast.error(error.message);
-      },
-    });
-
-  const { mutate: queueMoviesMutate, isPending: isQueueMoviesPending } =
-    useMutation({
-      mutationFn: async (body: { movies: Array<ScanMoviesRequest> }) => {
-        await fetch("/api/movies/queue", {
-          method: "POST",
-          body: JSON.stringify(body),
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["queue-status"] });
-      },
-      onError: (error) => {
-        toast.error(error.message);
-      },
-    });
+  const scanMovies = useScanMovies();
+  const queueMovies = useQueueMovies();
 
   const handleAddFolder = () => {
     if (!libraryPath.trim()) {
       toast.error("Please enter a folder path");
       return;
     }
-    scanMoviesMutate({ libraryPath });
+    scanMovies.mutate({ libraryPath });
   };
 
   const handleRemoveMovie = (index: number) => {
-    setParsedMovies((prev) => prev.filter((_, i) => i !== index));
+    scanMovies.setScanMovies((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = () => {
-    if (parsedMovies.length === 0) {
+    if (scanMovies.scanMovies.length === 0) {
       toast.error("Please add at least one movie folder");
       return;
     }
-    queueMoviesMutate({
-      movies: parsedMovies.map((movie) => ({
+    queueMovies.mutate({
+      movies: scanMovies.scanMovies.map((movie) => ({
         libraryPath,
         folderName: movie.folderName,
         movieTitle: movie.name,
@@ -109,13 +58,13 @@ export default function AddFolderDialog() {
     });
     setAddFolderDialogOpen(false);
     setLibraryPath("");
-    setParsedMovies([]);
+    scanMovies.setScanMovies([]);
   };
 
   const handleCancel = () => {
     setAddFolderDialogOpen(false);
     setLibraryPath("");
-    setParsedMovies([]);
+    scanMovies.setScanMovies([]);
   };
 
   if (!isMobile) {
@@ -139,7 +88,7 @@ export default function AddFolderDialog() {
                 />
                 <Button
                   onClick={handleAddFolder}
-                  disabled={isScanMoviesPending}
+                  disabled={scanMovies.isPending}
                   size="icon"
                 >
                   <Plus className="h-4 w-4" />
@@ -147,11 +96,11 @@ export default function AddFolderDialog() {
               </div>
             </div>
 
-            {parsedMovies.length > 0 && (
+            {scanMovies.scanMovies.length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Parsed Movies:</h3>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {parsedMovies.map((movie, index) => (
+                  {scanMovies.scanMovies.map((movie, index) => (
                     <div
                       key={index}
                       className="flex items-center justify-between p-3 bg-muted rounded-lg"
@@ -184,9 +133,11 @@ export default function AddFolderDialog() {
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={parsedMovies.length === 0 || isQueueMoviesPending}
+                disabled={
+                  scanMovies.scanMovies.length === 0 || queueMovies.isPending
+                }
               >
-                {isQueueMoviesPending ? (
+                {queueMovies.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   "Submit"
@@ -221,7 +172,7 @@ export default function AddFolderDialog() {
                 />
                 <Button
                   onClick={handleAddFolder}
-                  disabled={isScanMoviesPending}
+                  disabled={scanMovies.isPending}
                   size="icon"
                 >
                   <Plus className="h-4 w-4" />
@@ -229,11 +180,11 @@ export default function AddFolderDialog() {
               </div>
             </div>
 
-            {parsedMovies.length > 0 && (
+            {scanMovies.scanMovies.length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Parsed Movies:</h3>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {parsedMovies.map((movie, index) => (
+                  {scanMovies.scanMovies.map((movie, index) => (
                     <div
                       key={index}
                       className="flex items-center justify-between p-3 bg-muted rounded-lg"
@@ -266,9 +217,11 @@ export default function AddFolderDialog() {
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={parsedMovies.length === 0 || isQueueMoviesPending}
+                disabled={
+                  scanMovies.scanMovies.length === 0 || queueMovies.isPending
+                }
               >
-                {isQueueMoviesPending ? (
+                {queueMovies.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   "Submit"

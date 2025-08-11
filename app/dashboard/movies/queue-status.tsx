@@ -11,30 +11,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-interface QueueJob {
-  id: string;
-  movieTitle: string;
-  year?: string;
-  failedReason?: string;
-  timestamp: number;
-  libraryPath?: string;
-}
-
-interface QueueData {
-  stats: {
-    active: number;
-    waiting: number;
-    failed: number;
-    completed: number;
-  };
-  details: {
-    active: QueueJob[];
-    waiting: QueueJob[];
-    failed: QueueJob[];
-    completed: QueueJob[];
-  };
-}
+import { useQueueStatus } from "./hooks";
+import type { QueueData } from "@/lib/types";
 
 const getStatusConfig = (type: keyof QueueData["stats"]) => {
   switch (type) {
@@ -82,31 +60,14 @@ const getStatusConfig = (type: keyof QueueData["stats"]) => {
 };
 
 export default function QueueStatus() {
-  const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
+  const { queueStatusQuery } = useQueueStatus();
 
-  const { data: queueData } = useQuery<QueueData>({
-    queryKey: ["queue-status"],
-    queryFn: async () => {
-      const response = await fetch("/api/movies/queue-status");
-      if (!response.ok) {
-        throw new Error("Failed to fetch queue status");
-      }
-      return response.json();
-    },
-    refetchInterval: (query) => {
-      return query.state.data?.stats?.active === 0 ? false : 2000;
-    },
-  });
-  if (!queueData) {
+  if (!queueStatusQuery.data) {
     return <></>;
   }
 
-  if (queueData.stats.active === 0) {
-    queryClient.invalidateQueries({ queryKey: ["movies-lists"] });
-  }
-
-  const { stats: queueNumbers, details: queueDetails } = queueData;
+  const { stats: queueNumbers, details: queueDetails } = queueStatusQuery.data;
 
   if (queueNumbers.waiting === 0 && queueNumbers.active === 0) {
     return <></>;

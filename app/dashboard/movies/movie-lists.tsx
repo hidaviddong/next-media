@@ -1,28 +1,18 @@
 "use client";
 
 import { MovieCard } from "./movie-card";
-import { useQuery } from "@tanstack/react-query";
-import { movie } from "@/server/drizzle/schema";
+import { MovieSkeletonGrid } from "./movie-skeleton";
+import { useMovieLists } from "./hooks";
 
-type Movie = typeof movie.$inferSelect;
+export default function MovieLists() {
+  const { movieListsQuery } = useMovieLists();
+  const movies = movieListsQuery.data;
 
-export default function MovieList() {
-  const { data: movies } = useQuery<Movie[]>({
-    queryKey: ["movies-lists"],
-    queryFn: async () => {
-      const response = await fetch("/api/movies/lists");
-      if (!response.ok) {
-        throw new Error("Failed to fetch queue status");
-      }
-      return response.json();
-    },
-  });
-
-  if (!movies) {
-    return <></>;
+  if (movieListsQuery.isLoading) {
+    return <MovieSkeletonGrid count={6} />;
   }
 
-  if (movies.length === 0) {
+  if (!movies || movies.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <h3 className="text-lg font-semibold text-neutral-800">
