@@ -1,31 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  type ScanMoviesRequest,
-  type ScanMoviesResponse,
-  type MovieSchema,
-  type QueueData,
-  BadRequestError,
+  type ScanMoviesRequestType,
+  type ScanMoviesResponseType,
+  type QueueMoviesRequestType,
 } from "@/lib/types";
 import { toast } from "sonner";
 import { useState } from "react";
+import client from "@/lib/hono";
 
 export const QUERY_KEYS = {
-  MOVIE_LISTS: ["movie-lists"],
-  QUEUE_STATUS: ["queue-status"],
+  MOVIE_LISTS: ["movieLists"],
+  QUEUE_STATUS: ["queueStatus"],
 };
 
 export function useQueueMovies() {
   const queryClient = useQueryClient();
-  return useMutation<void, Error, { movies: ScanMoviesRequest[] }>({
-    mutationFn: async (body) => {
-      await fetch("/api/movies/queue", {
-        method: "POST",
-        body: JSON.stringify(body),
-        headers: { "Content-Type": "application/json" },
+  return useMutation({
+    mutationFn: async (body: QueueMoviesRequestType) => {
+      await client.api.movie.queue.$post({
+        json: {
+          movies: body.movies,
+        },
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["queue-status"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.QUEUE_STATUS });
     },
     onError: (error) => {
       toast.error(error.message);
@@ -35,26 +34,14 @@ export function useQueueMovies() {
 
 export function useScanMovies() {
   const [scanMovies, setScanMovies] = useState<
-    Array<ScanMoviesResponse["data"][number]>
+    Array<ScanMoviesResponseType["data"][number]>
   >([]);
-  const scanMoviesMutation = useMutation<
-    ScanMoviesResponse,
-    BadRequestError,
-    ScanMoviesRequest
-  >({
-    mutationFn: async (body) => {
-      const response = await fetch("/api/movies/scan", {
-        method: "POST",
-        body: JSON.stringify(body),
-        headers: {
-          "Content-Type": "application/json",
-        },
+  const scanMoviesMutation = useMutation({
+    mutationFn: async (body: ScanMoviesRequestType) => {
+      const response = await client.api.scan.$post({
+        json: body,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new BadRequestError(errorData.error);
-      }
       return response.json();
     },
     onSuccess: (data) => {
@@ -69,13 +56,10 @@ export function useScanMovies() {
 
 export function useMovieLists() {
   const key = QUERY_KEYS.MOVIE_LISTS;
-  const movieListsQuery = useQuery<MovieSchema[]>({
+  const movieListsQuery = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const response = await fetch("/api/movies/lists");
-      if (!response.ok) {
-        throw new Error("Failed to fetch queue status");
-      }
+      const response = await client.api.movie.lists.$get();
       return response.json();
     },
   });
@@ -85,17 +69,14 @@ export function useMovieLists() {
 export function useQueueStatus() {
   const key = QUERY_KEYS.QUEUE_STATUS;
   const queryClient = useQueryClient();
-  const queueStatusQuery = useQuery<QueueData>({
+  const queueStatusQuery = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const response = await fetch("/api/movies/queue-status");
-      if (!response.ok) {
-        throw new Error("Failed to fetch queue status");
-      }
+      const response = await client.api.movie.queueStatus.$get();
       return response.json();
     },
     refetchInterval: (query) => {
-      return query.state.data?.stats?.active === 0 ? false : 2000;
+      return query.state.data?.stats.active === 0 ? false : 2000;
     },
   });
 

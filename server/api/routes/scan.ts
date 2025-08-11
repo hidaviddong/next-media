@@ -1,8 +1,8 @@
 import z from "zod";
+import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import fs from "fs/promises";
-import type { ScanMoviesResponse } from "@/lib/types";
 
 function parseMovieFolder(folder: string) {
   let name = folder.trim();
@@ -20,16 +20,16 @@ const scanSchema = z.object({
   libraryPath: z.string(),
 });
 
-const app = new Hono().post(
+export const scanRoute = new Hono().post(
   "/",
   zValidator("json", scanSchema, (result, c) => {
     if (!result.success) {
-      return c.json({ error: "Invalid request" }, { status: 400 });
+      throw new HTTPException(400, { message: "Invalid Request" });
     }
   }),
   async (c) => {
     const { libraryPath } = c.req.valid("json");
-    const scanFolders: ScanMoviesResponse["data"] = [];
+    const scanFolders = [];
     const entries = await fs.readdir(libraryPath, {
       withFileTypes: true,
     });
@@ -49,5 +49,3 @@ const app = new Hono().post(
     return c.json({ data: scanFolders }, { status: 200 });
   }
 );
-
-export default app;

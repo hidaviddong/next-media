@@ -2,10 +2,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
-import type { MovieSchema } from "@/lib/types";
+import type { MovieListsResponseType } from "@/lib/types";
 
 interface MovieCardProps {
-  movie: MovieSchema;
+  movie: MovieListsResponseType[number];
 }
 export function MovieCard(props: MovieCardProps) {
   const movie = props.movie;

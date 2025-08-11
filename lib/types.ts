@@ -1,62 +1,37 @@
-import { movie } from "@/server/drizzle/schema";
+import client from "./hono";
+import type { InferRequestType, InferResponseType } from "hono/client";
 
-export class UnauthorizedError extends Error {
-  constructor() {
-    super("Unauthorized");
-    this.name = "UnauthorizedError";
-  }
-}
+export type MovieListsRequestType = InferRequestType<
+  typeof client.api.movie.lists.$get
+>;
 
-export class BadRequestError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "BadRequestError";
-  }
-}
+export type MovieListsResponseType = InferResponseType<
+  typeof client.api.movie.lists.$get
+>;
 
-export interface ScanMoviesRequest {
-  libraryPath: string;
-}
+export type QueueMoviesRequestType = InferRequestType<
+  typeof client.api.movie.queue.$post
+>["json"];
 
-export interface MovieFolder {
-  folderName: string;
-  name: string;
-  year?: string;
-}
+export type QueueMoviesResponseType = InferResponseType<
+  typeof client.api.movie.queue.$post
+>;
 
-export interface ScanMoviesResponse {
-  data: MovieFolder[];
-}
+export type QueueStatusRequestType = InferRequestType<
+  typeof client.api.movie.queueStatus.$get
+>;
 
-export interface ApiErrorResponse {
-  error: string;
-}
+export type QueueStatusResponseType = InferResponseType<
+  typeof client.api.movie.queueStatus.$get
+>;
 
-export type MovieSchema = typeof movie.$inferSelect;
+export type ScanMoviesRequestType = InferRequestType<
+  typeof client.api.scan.$post
+>["json"];
 
-export interface QueueJob {
-  id: string;
-  movieTitle: string;
-  year?: string;
-  failedReason?: string;
-  timestamp: number;
-  libraryPath?: string;
-}
-
-export interface QueueData {
-  stats: {
-    active: number;
-    waiting: number;
-    failed: number;
-    completed: number;
-  };
-  details: {
-    active: QueueJob[];
-    waiting: QueueJob[];
-    failed: QueueJob[];
-    completed: QueueJob[];
-  };
-}
+export type ScanMoviesResponseType = InferResponseType<
+  typeof client.api.scan.$post
+>;
 
 export interface TmdbApiRequestJob {
   userId: string;

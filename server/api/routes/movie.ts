@@ -1,4 +1,5 @@
 import { db } from "@/server/drizzle";
+import { HTTPException } from "hono/http-exception";
 import { tmdbApiRequestQueue } from "@/server/redis";
 import { movie, library } from "@/server/drizzle/schema";
 import { desc, eq } from "drizzle-orm";
@@ -11,30 +12,41 @@ const queueSchema = z.object({
   movies: z.array(
     z.object({
       libraryPath: z.string(),
+      folderName: z.string(),
+      movieTitle: z.string(),
+      year: z.string().optional(),
     })
   ),
 });
 
-const app = new Hono<{ Variables: Variables }>()
+export const movieRoute = new Hono<{ Variables: Variables }>()
   .get("/lists", async (c) => {
     const userId = c.get("user")?.id;
+    if (!userId) {
+      throw new HTTPException(401, { message: "Unauthorized" });
+    }
+
     const userMovies = await db
       .select()
       .from(movie)
       .innerJoin(library, eq(movie.libraryId, library.id))
       .where(eq(library.userId, userId!))
       .orderBy(desc(movie.createdAt));
-    return c.json(userMovies);
+
+    return c.json(userMovies.map((movie) => movie.movie));
   })
   .post(
     "/queue",
     zValidator("json", queueSchema, (result, c) => {
       if (!result.success) {
-        return c.json({ error: "Invalid request" }, { status: 400 });
+        throw new HTTPException(400, { message: "Invalid Request" });
       }
     }),
     async (c) => {
       const userId = c.get("user")?.id;
+      if (!userId) {
+        throw new HTTPException(401, { message: "Unauthorized" });
+      }
       const { movies } = c.req.valid("json");
       tmdbApiRequestQueue.addBulk(
         movies.map((movie) => ({
@@ -48,8 +60,11 @@ const app = new Hono<{ Variables: Variables }>()
       return c.json({ success: true }, { status: 200 });
     }
   )
-  .get("/queue-status", async (c) => {
+  .get("/queueStatus", async (c) => {
     const userId = c.get("user")?.id;
+    if (!userId) {
+      throw new HTTPException(401, { message: "Unauthorized" });
+    }
     const queueJobs = await tmdbApiRequestQueue.getJobs([
       "active",
       "waiting",
@@ -121,5 +136,3 @@ const app = new Hono<{ Variables: Variables }>()
       details: queueDetails,
     });
   });
-
-export default app;

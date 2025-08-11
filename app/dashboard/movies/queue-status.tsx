@@ -12,9 +12,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useQueueStatus } from "./hooks";
-import type { QueueData } from "@/lib/types";
+import type { QueueStatusResponseType } from "@/lib/types";
 
-const getStatusConfig = (type: keyof QueueData["stats"]) => {
+const getStatusConfig = (type: keyof QueueStatusResponseType["stats"]) => {
   switch (type) {
     case "active":
       return {

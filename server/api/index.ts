@@ -1,18 +1,16 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
-import authMiddleware from "./middleware/auth";
-import authRoute from "./routes/auth";
-import scanRoute from "./routes/scan";
-import moviesRoute from "./routes/movies";
+import { customLogger, authMiddleware } from "./middleware";
+import { authRoute, scanRoute, movieRoute } from "./routes";
 import { Variables } from "./type";
 
 const app = new Hono<{ Variables: Variables }>().basePath("/api");
-
-app.use(logger());
-app.use("*", authMiddleware);
-app.route("/auth", authRoute);
-app.route("/scan", scanRoute);
-app.route("/movies", moviesRoute);
+const routes = app
+  .use(logger(customLogger))
+  .use("*", authMiddleware)
+  .route("/auth", authRoute)
+  .route("/scan", scanRoute)
+  .route("/movie", movieRoute);
 
 export default app;
-export type AppType = typeof app;
+export type AppType = typeof routes;
