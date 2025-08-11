@@ -13,6 +13,7 @@
     "dev:redis": "tsx server/redis/worker.ts"
   },
   "dependencies": {
+    "@hono/zod-validator": "^0.7.2",
     "@hookform/resolvers": "^5.2.1",
     "@libsql/client": "^0.15.10",
     "@next/env": "^15.4.5",
@@ -53,6 +54,7 @@
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.4",
     "embla-carousel-react": "^8.6.0",
+    "hono": "^4.9.0",
     "input-otp": "^1.4.2",
     "ioredis": "^5.7.0",
     "jotai": "^2.13.0",

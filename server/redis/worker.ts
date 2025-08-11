@@ -6,33 +6,9 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../drizzle";
 import { nanoid } from "nanoid";
 import { TMDB_BASE_URL } from "@/lib/constant";
+import type { TmdbApiRequestJob, TmdbMovieResponse } from "@/lib/types";
 
 const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN!;
-
-interface TmdbApiRequestJob {
-  userId: string;
-  libraryPath: string; // 库的根路径, e.g., "/data/movies"
-  folderName: string; // 这部电影的原始文件夹名, e.g., "The Matrix 1999"
-  movieTitle: string; // 从文件夹名解析出的电影标题
-  year: string; // 从文件夹名解析出的年份
-}
-
-export interface TmdbMovieResponse {
-  adult: boolean;
-  backdrop_path: string;
-  genre_ids: number[];
-  id: number;
-  original_language: string;
-  original_title: string;
-  overview: string;
-  popularity: number;
-  poster_path: string;
-  release_date: string;
-  title: string;
-  video: boolean;
-  vote_average: number;
-  vote_count: number;
-}
 
 export const tmdbApiRequestWorker = new Worker(
   "tmdb-api-requests",
