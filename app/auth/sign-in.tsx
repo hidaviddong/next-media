@@ -18,6 +18,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useSetAtom } from "jotai";
 import { isSignUpAtom } from "@/lib/store";
+import { APP_BASE_URL } from "@/lib/constant";
 
 const signInSchema = z.object({
   email: z.email({
@@ -38,7 +39,7 @@ export default function SignIn() {
           email: values.email,
           password: values.password,
           rememberMe: true,
-          callbackURL: "http://localhost:3000",
+          callbackURL: APP_BASE_URL,
         },
         {
           onError: (error) => {
