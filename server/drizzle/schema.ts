@@ -1,4 +1,9 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  text,
+  integer,
+  primaryKey,
+} from "drizzle-orm/sqlite-core";
 
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
@@ -82,7 +87,6 @@ export const movie = sqliteTable("movie", {
   id: text("id").primaryKey(),
   tmdbId: integer("tmdb_id").notNull().unique(),
   name: text("title").notNull(),
-  folderName: text("folder_name").notNull(),
   year: text("year"),
   overview: text("overview"),
   poster: text("poster"),
@@ -92,7 +96,18 @@ export const movie = sqliteTable("movie", {
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .$defaultFn(() => new Date())
     .notNull(),
-  libraryId: text("library_id")
-    .notNull()
-    .references(() => library.id, { onDelete: "cascade" }),
 });
+
+export const library_movies = sqliteTable(
+  "library_movies",
+  {
+    libraryId: text("library_id")
+      .notNull()
+      .references(() => library.id, { onDelete: "cascade" }),
+    movieId: text("movie_id")
+      .notNull()
+      .references(() => movie.id, { onDelete: "cascade" }),
+    path: text("path").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.libraryId, t.movieId] })]
+);

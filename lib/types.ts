@@ -36,7 +36,7 @@ export type ScanMoviesResponseType = InferResponseType<
 export interface TmdbApiRequestJob {
   userId: string;
   libraryPath: string; // 库的根路径, e.g., "/data/movies"
-  folderName: string; // 这部电影的原始文件夹名, e.g., "The Matrix 1999"
+  filePath: string; // 这部电影的原始文件夹名, e.g., "The Matrix 1999"
   movieTitle: string; // 从文件夹名解析出的电影标题
   year: string; // 从文件夹名解析出的年份
 }

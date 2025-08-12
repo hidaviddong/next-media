@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { type Job, Worker } from "bullmq";
 import { connection } from "../redis";
-import { library, movie } from "../drizzle/schema";
+import { library, movie, library_movies } from "../drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { db } from "../drizzle";
 import { nanoid } from "nanoid";
@@ -13,49 +13,23 @@ const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN!;
 export const tmdbApiRequestWorker = new Worker(
   "tmdb-api-requests",
   async (job: Job<TmdbApiRequestJob>) => {
-    const { userId, libraryPath, folderName, movieTitle, year } = job.data;
-    console.log(`Processing job ${job.id}: ${folderName}`);
+    const { userId, libraryPath, filePath, movieTitle, year } = job.data;
+    console.log(`Processing job ${job.id} for file: ${filePath}`);
 
     // =================================================================
-    // 1. 检查用户对应的library是否存在, 不存在则创建
+    // 1. 获取 Library (逻辑不变)
     // =================================================================
-
-    let lib = await db.query.library.findFirst({
+    const lib = await db.query.library.findFirst({
       where: and(eq(library.path, libraryPath), eq(library.userId, userId)),
     });
-
     if (!lib) {
-      console.log(
-        `Library path "${libraryPath}" not found for user. Creating...`
+      throw new Error(
+        `Library with path "${libraryPath}" not found for user ${userId}`
       );
-      const newLibraries = await db
-        .insert(library)
-        .values({
-          id: nanoid(),
-          path: libraryPath,
-          userId: userId,
-        })
-        .returning();
-      lib = newLibraries[0];
-      console.log(`Library created with ID: ${lib.id}`);
     }
 
     // =================================================================
-    // 2. 检查电影是否已存在于此库中 (防止重复处理)
-    // =================================================================
-    const existingMovie = await db.query.movie.findFirst({
-      where: and(eq(movie.libraryId, lib.id), eq(movie.folderName, folderName)),
-    });
-
-    if (existingMovie) {
-      console.log(
-        `Movie "${folderName}" already exists in the database. Skipping.`
-      );
-      return { message: "Movie already exists." };
-    }
-
-    // =================================================================
-    // 3. 请求 TMDB API
+    // 2. 请求 TMDB API
     // =================================================================
     console.log(`Fetching TMDB data for: "${movieTitle}" (${year})`);
     const url = `${TMDB_BASE_URL}/search/movie?query=${encodeURIComponent(
@@ -70,40 +44,64 @@ export const tmdbApiRequestWorker = new Worker(
     });
 
     if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(
-        `TMDB API request failed with status ${res.status}: ${errorText}`
-      );
+      throw new Error(`TMDB API request failed`);
     }
-
     const data = await res.json();
     const tmdbResult = data.results?.[0] as TmdbMovieResponse;
 
     if (!tmdbResult) {
       throw new Error(`No movie found on TMDB for query: "${movieTitle}"`);
     }
+    console.log(`Found TMDB ID: ${tmdbResult.id}.`);
 
     // =================================================================
-    // 4. 将获取到的数据存入数据库
+    // 3. 查找或创建电影主数据
+    //    确保电影元数据在 `movie` 表中是唯一的。
     // =================================================================
-    console.log(`Found TMDB ID: ${tmdbResult.id}. Saving to database...`);
 
-    const newMovies = await db
-      .insert(movie)
-      .values({
-        id: nanoid(),
-        tmdbId: tmdbResult.id,
-        name: tmdbResult.original_title,
-        folderName: folderName,
-        year: tmdbResult.release_date,
-        overview: tmdbResult.overview,
-        poster: tmdbResult.poster_path,
-        libraryId: lib.id,
-      })
-      .returning();
+    let movieRecord = await db.query.movie.findFirst({
+      where: eq(movie.tmdbId, tmdbResult.id),
+    });
 
-    console.log(`Successfully saved movie "${newMovies[0].name}" to database.`);
-    return newMovies[0]; // 将新创建的电影对象作为job的成功结果返回
+    if (!movieRecord) {
+      const newMovies = await db
+        .insert(movie)
+        .values({
+          id: nanoid(),
+          tmdbId: tmdbResult.id,
+          name: tmdbResult.title,
+          overview: tmdbResult.overview,
+          year: tmdbResult.release_date,
+          poster: tmdbResult.poster_path,
+        })
+        .returning();
+      movieRecord = newMovies[0];
+    }
+
+    const existingLink = await db.query.library_movies.findFirst({
+      where: and(
+        eq(library_movies.libraryId, lib.id),
+        eq(library_movies.movieId, movieRecord.id)
+      ),
+    });
+
+    if (existingLink) {
+      console.log(
+        `Movie "${movieRecord.name}" is already linked to library "${lib.path}". Skipping.`
+      );
+      return { message: "Movie already linked." };
+    }
+
+    await db.insert(library_movies).values({
+      libraryId: lib.id,
+      movieId: movieRecord.id,
+      path: libraryPath + "/" + filePath,
+    });
+
+    console.log(
+      `Successfully linked movie "${movieRecord.name}" from path "${filePath}" to library "${lib.path}".`
+    );
+    return { success: true };
   },
   {
     connection,

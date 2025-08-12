@@ -8,7 +8,7 @@ interface MovieCardProps {
   movie: MovieListsResponseType[number];
 }
 export function MovieCard(props: MovieCardProps) {
-  const movie = props.movie;
+  const movie = props.movie.movie;
   if (!movie.poster) {
     return (
       <div className="group block">

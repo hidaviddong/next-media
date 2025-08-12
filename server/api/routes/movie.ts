@@ -1,18 +1,19 @@
 import { db } from "@/server/drizzle";
 import { HTTPException } from "hono/http-exception";
 import { tmdbApiRequestQueue } from "@/server/redis";
-import { movie, library } from "@/server/drizzle/schema";
-import { desc, eq } from "drizzle-orm";
+import { movie, library, library_movies } from "@/server/drizzle/schema";
+import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { Variables } from "../type";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";
+import { nanoid } from "nanoid";
 
 const queueSchema = z.object({
   movies: z.array(
     z.object({
       libraryPath: z.string(),
-      folderName: z.string(),
+      filePath: z.string(),
       movieTitle: z.string(),
       year: z.string().optional(),
     })
@@ -27,13 +28,17 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
     }
 
     const userMovies = await db
-      .select()
-      .from(movie)
-      .innerJoin(library, eq(movie.libraryId, library.id))
+      .select({
+        movie: movie,
+        path: library_movies.path,
+      })
+      .from(library)
       .where(eq(library.userId, userId!))
+      .innerJoin(library_movies, eq(library.id, library_movies.libraryId))
+      .innerJoin(movie, eq(library_movies.movieId, movie.id))
       .orderBy(desc(movie.createdAt));
 
-    return c.json(userMovies.map((movie) => movie.movie));
+    return c.json(userMovies);
   })
   .post(
     "/queue",
@@ -47,17 +52,59 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       if (!userId) {
         throw new HTTPException(401, { message: "Unauthorized" });
       }
-      const { movies } = c.req.valid("json");
+
+      const { movies: incomingMovies } = c.req.valid("json");
+
+      if (incomingMovies.length === 0) {
+        return c.json({ success: true, message: "No movies to process." });
+      }
+
+      const libraryPath = incomingMovies[0].libraryPath;
+
+      let lib = await db.query.library.findFirst({
+        where: and(eq(library.userId, userId), eq(library.path, libraryPath)),
+      });
+
+      if (!lib) {
+        const newLibraries = await db
+          .insert(library)
+          .values({ id: nanoid(), userId, path: libraryPath })
+          .returning();
+        lib = newLibraries[0];
+      }
+
+      const existingLinks = await db
+        .select({ path: library_movies.path })
+        .from(library_movies)
+        .where(eq(library_movies.libraryId, lib.id));
+
+      const existingFilePaths = new Set(existingLinks.map((l) => l.path));
+
+      const newMoviesToQueue = incomingMovies.filter(
+        (m) => !existingFilePaths.has(m.filePath)
+      );
+
+      if (newMoviesToQueue.length === 0) {
+        return c.json({
+          success: true,
+          message: "All movies already exist in the library.",
+        });
+      }
+
       tmdbApiRequestQueue.addBulk(
-        movies.map((movie) => ({
+        newMoviesToQueue.map((movie) => ({
           name: "tmdb-api-request",
-          data: {
-            ...movie,
-            userId,
-          },
+          data: { ...movie, userId },
         }))
       );
-      return c.json({ success: true }, { status: 200 });
+
+      return c.json(
+        {
+          success: true,
+          message: `Queued ${newMoviesToQueue.length} new movies.`,
+        },
+        { status: 200 }
+      );
     }
   )
   .get("/queueStatus", async (c) => {

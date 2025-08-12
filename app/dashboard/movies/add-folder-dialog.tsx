@@ -51,7 +51,7 @@ export default function AddFolderDialog() {
     queueMovies.mutate({
       movies: scanMovies.scanMovies.map((movie) => ({
         libraryPath,
-        folderName: movie.folderName,
+        filePath: movie.folderName,
         movieTitle: movie.name,
         year: movie.year,
       })),
