@@ -1,4 +1,4 @@
-import AppHeader from "@/components/app-header";
+import AppHeader from "./app-header";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
