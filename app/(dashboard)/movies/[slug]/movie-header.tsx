@@ -21,7 +21,7 @@ export function MovieHeader({ movieRecord, posterUrl }: MovieHeaderProps) {
       <div className="container mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
           <Link
-            href="/dashboard/movies"
+            href="/movies"
             className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
             onClick={() => setHasPlayButtonClick(false)}
           >

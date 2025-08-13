@@ -76,9 +76,7 @@ export default function AddFolderDialog() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="library" className="text-sm font-medium">
-                Library Path
-              </label>
+              <label htmlFor="library" className="text-sm font-medium"></label>
               <div className="flex gap-2">
                 <Input
                   id="library"
@@ -160,9 +158,7 @@ export default function AddFolderDialog() {
 
           <div className="p-4 space-y-4">
             <div className="space-y-2">
-              <label htmlFor="library" className="text-sm font-medium">
-                Library Path
-              </label>
+              <label htmlFor="library" className="text-sm font-medium"></label>
               <div className="flex gap-2">
                 <Input
                   id="library"

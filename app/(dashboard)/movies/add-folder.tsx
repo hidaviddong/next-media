@@ -8,8 +8,8 @@ import { addFolderDialogOpenAtom } from "@/lib/store";
 export default function AddFolder() {
   const setAddFolderDialogOpen = useSetAtom(addFolderDialogOpenAtom);
   return (
-    <div className="">
-      <Button onClick={() => setAddFolderDialogOpen(true)}>
+    <div className="w-full flex justify-end">
+      <Button variant="ghost" onClick={() => setAddFolderDialogOpen(true)}>
         <Plus className="h-4 w-4 mr-2" />
         Add Folder
       </Button>

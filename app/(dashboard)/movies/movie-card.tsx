@@ -30,7 +30,7 @@ export function MovieCard(props: MovieCardProps) {
   return (
     <Link
       href={{
-        pathname: `/dashboard/movies/${movie.tmdbId}`,
+        pathname: `/movies/${movie.tmdbId}`,
         query: { path: props.movie.path },
       }}
       className="group block space-y-2"

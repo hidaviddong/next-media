@@ -1,10 +1,11 @@
 export default function MoviePlayer({ path }: { path: string }) {
+  const movieName = path.split("/").pop();
   return (
     <div className="w-full max-w-6xl mx-auto">
       <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
         <video
           controls
-          src={`/api/movie/play/?moviePath=${path}/test.mp4`}
+          src={`/api/movie/play/?moviePath=${path}/${movieName}.mp4`}
           className="w-full h-full object-contain"
           autoPlay
         >

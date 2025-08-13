@@ -27,7 +27,7 @@ const data = {
       items: [
         {
           title: "Movies",
-          url: "/dashboard/movies",
+          url: "/movies",
         },
       ],
     },

@@ -6,4 +6,5 @@ Next media is a media management system (eg. Jellyfin, Emby, Plex) powered by Ne
 ## TODO
 
 - [x] Sign Up / Sign In
-
+- [ ] 自动添加字幕
+- [ ] 
