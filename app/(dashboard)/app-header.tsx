@@ -12,8 +12,11 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { useSetAtom } from "jotai";
+import { hasPlayButtonClickAtom } from "@/lib/store";
 
 export default function AppHeader() {
+  const setHasPlayButtonClick = useSetAtom(hasPlayButtonClickAtom);
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const user = session?.user;
@@ -25,7 +28,10 @@ export default function AppHeader() {
         <div className="flex items-center gap-3">
           <div
             className="flex items-center gap-3 cursor-pointer"
-            onClick={() => router.push("/movies")}
+            onClick={() => {
+              router.push("/movies");
+              setHasPlayButtonClick(false);
+            }}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80">
               <Film className="h-4 w-4 text-primary-foreground" />
