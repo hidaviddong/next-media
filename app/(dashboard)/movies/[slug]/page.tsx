@@ -28,12 +28,6 @@ export default async function Page({
     : "";
 
   return (
-    <div className="min-h-screen">
-      <MovieDetail
-        path={path}
-        posterUrl={posterUrl}
-        movieRecord={movieRecord}
-      />
-    </div>
+    <MovieDetail path={path} posterUrl={posterUrl} movieRecord={movieRecord} />
   );
 }
