@@ -7,7 +7,6 @@ export default function MoviePlayer({ path }: { path: string }) {
           controls
           src={`/api/movie/play/?moviePath=${path}/${movieName}.mp4`}
           className="w-full h-full object-contain"
-          autoPlay
         >
           Your browser does not support the video tag.
         </video>
