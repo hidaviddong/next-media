@@ -11,7 +11,6 @@ interface MovieCardProps {
 
 export function MovieCard(props: MovieCardProps) {
   const movie = props.movie.movie;
-
   if (!movie.poster) {
     return (
       <motion.div
@@ -38,16 +37,8 @@ export function MovieCard(props: MovieCardProps) {
     );
   }
 
-  const posterUrl = `${TMDB_IMAGE_BASE_URL}${movie.poster}`;
-
   return (
-    <Link
-      href={{
-        pathname: `/movies/${movie.tmdbId}`,
-        query: { path: props.movie.path },
-      }}
-      className="group block space-y-2"
-    >
+    <Link href={`/movies/${movie.tmdbId}`} className="group block space-y-2">
       <motion.div
         className="overflow-hidden rounded-lg"
         layoutId={`movie-${movie.tmdbId}`}
@@ -61,7 +52,7 @@ export function MovieCard(props: MovieCardProps) {
         <AspectRatio ratio={2 / 3} className="bg-neutral-800">
           <Image
             priority={true}
-            src={posterUrl}
+            src={`${TMDB_IMAGE_BASE_URL}${movie.poster}`}
             alt={`Poster for ${movie.name}`}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

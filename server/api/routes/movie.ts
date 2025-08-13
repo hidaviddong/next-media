@@ -11,7 +11,6 @@ import { nanoid } from "nanoid";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { Readable } from "node:stream";
-import { stream } from "hono/streaming";
 
 const queueSchema = z.object({
   movies: z.array(
@@ -26,6 +25,10 @@ const queueSchema = z.object({
 
 const playSchema = z.object({
   moviePath: z.string(),
+});
+
+const moviePathSchema = z.object({
+  tmdbId: z.string(),
 });
 
 export const movieRoute = new Hono<{ Variables: Variables }>()
@@ -192,6 +195,37 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
     });
   })
   .get(
+    "/moviePath",
+    zValidator("query", moviePathSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const userId = c.get("user")?.id;
+      if (!userId) {
+        throw new HTTPException(401, { message: "Unauthorized" });
+      }
+      const { tmdbId } = c.req.query();
+
+      const result = await db
+        .select({
+          path: library_movies.path,
+        })
+        .from(library_movies)
+        .innerJoin(library, eq(library_movies.libraryId, library.id))
+        .innerJoin(movie, eq(library_movies.movieId, movie.id))
+        .where(
+          and(eq(library.userId, userId), eq(movie.tmdbId, parseInt(tmdbId)))
+        );
+
+      if (result.length === 0) {
+        throw new HTTPException(404, { message: "Movie not found" });
+      }
+      return c.json({ path: result[0].path });
+    }
+  )
+  .get(
     "/play",
     zValidator("query", playSchema, (result, c) => {
       if (!result.success) {
@@ -204,9 +238,26 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         throw new HTTPException(401, { message: "Unauthorized" });
       }
       const { moviePath } = c.req.valid("query");
+      const userMovieAccess = await db
+        .select({
+          path: library_movies.path,
+        })
+        .from(library_movies)
+        .innerJoin(library, eq(library_movies.libraryId, library.id))
+        .where(
+          and(eq(library.userId, userId), eq(library_movies.path, moviePath))
+        );
+
+      if (userMovieAccess.length === 0) {
+        throw new HTTPException(403, {
+          message: "Access denied: Movie not found in user's library",
+        });
+      }
 
       try {
-        const stats = await fs.stat(moviePath);
+        const movieName = moviePath.split("/").pop();
+        const fullPath = `${moviePath}/${movieName}.mp4`;
+        const stats = await fs.stat(fullPath);
         const fileSize = stats.size;
         const rangeHeader = c.req.header("range");
         const headers = {
@@ -239,7 +290,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           const chunksize = end - start + 1;
 
           // 4. 创建一个只读取文件特定部分的 Node.js 流。
-          const nodeStream = createReadStream(moviePath, { start, end });
+          const nodeStream = createReadStream(fullPath, { start, end });
           const webStream = Readable.toWeb(nodeStream) as any;
 
           // 5. 构建流式响应的特定头。
@@ -253,7 +304,6 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           return c.body(webStream, 206, streamHeaders);
         }
       } catch (e) {
-        console.log(e);
         throw new HTTPException(404, { message: "Server Error" });
       }
     }

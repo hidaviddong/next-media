@@ -20,7 +20,7 @@ export default function MovieLists() {
           No Movies Found
         </h3>
         <p className="text-neutral-500">
-          Your library is empty. Add a path to start scanning.
+          Your library is empty. Add a movie folder to start scanning.
         </p>
       </div>
     );

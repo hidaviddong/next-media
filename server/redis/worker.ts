@@ -49,6 +49,8 @@ export const tmdbApiRequestWorker = new Worker(
     const data = await res.json();
     const tmdbResult = data.results?.[0] as TmdbMovieResponse;
 
+    console.log("tmdbResult", tmdbResult);
+
     if (!tmdbResult) {
       throw new Error(`No movie found on TMDB for query: "${movieTitle}"`);
     }
@@ -95,7 +97,9 @@ export const tmdbApiRequestWorker = new Worker(
     await db.insert(library_movies).values({
       libraryId: lib.id,
       movieId: movieRecord.id,
-      path: libraryPath + "/" + filePath,
+      path: libraryPath.endsWith("/")
+        ? libraryPath + filePath
+        : libraryPath + "/" + filePath,
     });
 
     console.log(

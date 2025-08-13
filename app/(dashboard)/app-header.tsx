@@ -73,7 +73,12 @@ export default function AppHeader() {
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => authClient.signOut()}>
+              <DropdownMenuItem
+                onClick={async () => {
+                  await authClient.signOut();
+                  router.push("/auth");
+                }}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Logout</span>
               </DropdownMenuItem>

@@ -1,7 +1,7 @@
 "use client";
 
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Calendar, Play } from "lucide-react";
+import { AlignLeftIcon, Calendar, MoveLeftIcon, Play } from "lucide-react";
 import Image from "next/image";
 import {
   Tooltip,
@@ -14,57 +14,56 @@ import { hasPlayButtonClickAtom } from "@/lib/store";
 import MoviePlayer from "./movie-player";
 import type { Movie } from "@/lib/types";
 import { AnimatePresence, motion } from "motion/react";
-import Link from "next/link";
+import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
+import { useMoviePath } from "../hooks";
+import { toast } from "sonner";
 
 interface MovieDetailProps {
-  posterUrl: string;
   movieRecord: Movie;
-  path: string;
 }
 
-export function MovieDetail({
-  posterUrl,
-  movieRecord,
-  path,
-}: MovieDetailProps) {
+export function MovieDetail({ movieRecord }: MovieDetailProps) {
   const [hasPlayButtonClick, setHasPlayButtonClick] = useAtom(
     hasPlayButtonClickAtom
   );
 
+  const { moviePathQuery } = useMoviePath(movieRecord.tmdbId.toString());
+  const moviePath = moviePathQuery.data?.path;
+
   return (
     <div className="py-8">
       {/* Back Button with Movie Poster */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-        className="mb-6"
-      >
-        <Button
-          variant="ghost"
-          className="h-auto p-0 cursor-pointer"
-          onClick={() => setHasPlayButtonClick(false)}
-        >
+      <AnimatePresence>
+        {hasPlayButtonClick && (
           <motion.div
-            layoutId={`movie-${movieRecord.tmdbId}`}
-            className="w-8 h-8 rounded-md overflow-hidden"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            className="mb-6"
           >
-            {posterUrl ? (
-              <Image
-                src={posterUrl}
-                alt={`Poster for ${movieRecord.name}`}
-                width={32}
-                height={32}
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-neutral-200 flex items-center justify-center">
-                <span className="text-xs text-neutral-500">No Image</span>
-              </div>
-            )}
+            <motion.div
+              layoutId={`movie-${movieRecord.tmdbId}`}
+              layout="position"
+              className="w-8 h-8 rounded-md overflow-hidden cursor-pointer"
+              onClick={() => setHasPlayButtonClick(false)}
+            >
+              {movieRecord.poster && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="secondary" size="icon" className="size-8">
+                      <MoveLeftIcon />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{movieRecord.name}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </motion.div>
           </motion.div>
-        </Button>
-      </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence initial={false} mode="wait">
         {hasPlayButtonClick ? (
@@ -73,9 +72,14 @@ export function MovieDetail({
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.35, ease: "easeInOut" }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <MoviePlayer path={path} />
+            {moviePath && movieRecord.poster && (
+              <MoviePlayer
+                moviePath={moviePath}
+                posterPath={movieRecord.poster}
+              />
+            )}
           </motion.div>
         ) : (
           <motion.div
@@ -83,7 +87,7 @@ export function MovieDetail({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.35, ease: "easeInOut" }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
             className="grid grid-cols-1 lg:grid-cols-3 gap-8"
           >
             {/* Poster */}
@@ -91,21 +95,18 @@ export function MovieDetail({
               <div className="w-full max-w-sm mx-auto lg:mx-0">
                 <motion.div
                   layoutId={`movie-${movieRecord.tmdbId}`}
+                  layout="position"
                   className="rounded-lg overflow-hidden shadow-lg border border-neutral-200"
                 >
                   <AspectRatio ratio={2 / 3}>
-                    {posterUrl ? (
+                    {movieRecord.poster && (
                       <Image
-                        src={posterUrl}
+                        src={`${TMDB_IMAGE_BASE_URL}${movieRecord.poster}`}
                         alt={`Poster for ${movieRecord.name}`}
                         fill
                         className="object-cover"
                         priority
                       />
-                    ) : (
-                      <div className="flex items-center justify-center bg-neutral-100">
-                        <span className="text-neutral-500">No Image</span>
-                      </div>
                     )}
                   </AspectRatio>
                 </motion.div>
@@ -156,7 +157,14 @@ export function MovieDetail({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        onClick={() => setHasPlayButtonClick(true)}
+                        onClick={() => {
+                          // 如果没有电影路径
+                          if (!moviePath) {
+                            toast.error("Movie path not found");
+                            return;
+                          }
+                          setHasPlayButtonClick(true);
+                        }}
                         size="lg"
                         className="bg-neutral-900 hover:bg-neutral-800 text-white cursor-pointer"
                       >
@@ -165,7 +173,7 @@ export function MovieDetail({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{path}</p>
+                      <p>{moviePath}</p>
                     </TooltipContent>
                   </Tooltip>
                 </motion.div>

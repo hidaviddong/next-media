@@ -8,9 +8,10 @@ import { toast } from "sonner";
 import { useState } from "react";
 import client from "@/lib/hono";
 
-export const QUERY_KEYS = {
+export const KEYS = {
   MOVIE_LISTS: ["movieLists"],
   QUEUE_STATUS: ["queueStatus"],
+  MOVIE_PATH: ["moviePath"],
 };
 
 export function useQueueMovies() {
@@ -24,7 +25,7 @@ export function useQueueMovies() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.QUEUE_STATUS });
+      queryClient.invalidateQueries({ queryKey: KEYS.QUEUE_STATUS });
     },
     onError: (error) => {
       toast.error(error.message);
@@ -55,7 +56,7 @@ export function useScanMovies() {
 }
 
 export function useMovieLists() {
-  const key = QUERY_KEYS.MOVIE_LISTS;
+  const key = KEYS.MOVIE_LISTS;
   const movieListsQuery = useQuery({
     queryKey: key,
     queryFn: async () => {
@@ -67,7 +68,7 @@ export function useMovieLists() {
 }
 
 export function useQueueStatus() {
-  const key = QUERY_KEYS.QUEUE_STATUS;
+  const key = KEYS.QUEUE_STATUS;
   const queryClient = useQueryClient();
   const queueStatusQuery = useQuery({
     queryKey: key,
@@ -81,7 +82,20 @@ export function useQueueStatus() {
   });
 
   if (queueStatusQuery.data?.stats.active === 0) {
-    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.MOVIE_LISTS });
+    queryClient.invalidateQueries({ queryKey: KEYS.MOVIE_LISTS });
   }
   return { queueStatusQuery, key };
+}
+export function useMoviePath(tmdbId: string) {
+  const moviePathQuery = useQuery({
+    queryKey: [KEYS.MOVIE_PATH, tmdbId],
+    queryFn: async () => {
+      const response = await client.api.movie.moviePath.$get({
+        query: { tmdbId },
+      });
+      return response.json();
+    },
+  });
+
+  return { moviePathQuery };
 }
