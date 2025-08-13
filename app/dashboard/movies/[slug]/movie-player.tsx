@@ -1,0 +1,16 @@
+export default function MoviePlayer({ path }: { path: string }) {
+  return (
+    <div className="w-full max-w-6xl mx-auto">
+      <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
+        <video
+          controls
+          src={`/api/movie/play/?moviePath=${path}/test.mp4`}
+          className="w-full h-full object-contain"
+          autoPlay
+        >
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    </div>
+  );
+}

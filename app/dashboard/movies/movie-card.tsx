@@ -29,7 +29,10 @@ export function MovieCard(props: MovieCardProps) {
 
   return (
     <Link
-      href={`/dashboard/movies/${movie.id}`}
+      href={{
+        pathname: `/dashboard/movies/${movie.tmdbId}`,
+        query: { path: props.movie.path },
+      }}
       className="group block space-y-2"
     >
       <div className="overflow-hidden rounded-lg">

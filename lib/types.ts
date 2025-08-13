@@ -1,5 +1,7 @@
+import { db } from "@/server/drizzle";
 import client from "./hono";
 import type { InferRequestType, InferResponseType } from "hono/client";
+import { movie } from "@/server/drizzle/schema";
 
 export type MovieListsRequestType = InferRequestType<
   typeof client.api.movie.lists.$get
@@ -32,6 +34,12 @@ export type ScanMoviesRequestType = InferRequestType<
 export type ScanMoviesResponseType = InferResponseType<
   typeof client.api.scan.$post
 >;
+
+// infer drizzle orm type
+//
+// db.
+
+export type Movie = typeof movie.$inferSelect;
 
 export interface TmdbApiRequestJob {
   userId: string;

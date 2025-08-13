@@ -8,6 +8,10 @@ import { Variables } from "../type";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { nanoid } from "nanoid";
+import fs from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { Readable } from "node:stream";
+import { stream } from "hono/streaming";
 
 const queueSchema = z.object({
   movies: z.array(
@@ -18,6 +22,10 @@ const queueSchema = z.object({
       year: z.string().optional(),
     })
   ),
+});
+
+const playSchema = z.object({
+  moviePath: z.string(),
 });
 
 export const movieRoute = new Hono<{ Variables: Variables }>()
@@ -182,4 +190,71 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       stats: queueStats,
       details: queueDetails,
     });
-  });
+  })
+  .get(
+    "/play",
+    zValidator("query", playSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const userId = c.get("user")?.id;
+      if (!userId) {
+        throw new HTTPException(401, { message: "Unauthorized" });
+      }
+      const { moviePath } = c.req.valid("query");
+
+      try {
+        const stats = await fs.stat(moviePath);
+        const fileSize = stats.size;
+        const rangeHeader = c.req.header("range");
+        const headers = {
+          "Content-Type": "video/mp4",
+          "Accept-Ranges": "bytes",
+        };
+
+        if (!rangeHeader) {
+          throw new HTTPException(400, {
+            message: "Should add range in request header",
+          });
+        } else {
+          // 有rangeHeader 解析
+          // 1. 手动解析 Range 头 (例如 "bytes=0-1023")
+          const parts = rangeHeader.replace(/bytes=/, "").split("-");
+          const start = parseInt(parts[0], 10);
+          // 如果 parts[1] 不存在 (例如 "bytes=1024-")，则表示请求到文件末尾。
+          const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+          // 2. 健壮性检查：确保请求的范围在文件大小之内。
+          if (start >= fileSize || end >= fileSize || start > end) {
+            c.header("Content-Range", `bytes */${fileSize}`);
+            return c.json({
+              success: false,
+              message: "Range Not Satisfiable",
+            });
+          }
+
+          // 3. 计算本次请求要发送的数据块大小。
+          const chunksize = end - start + 1;
+
+          // 4. 创建一个只读取文件特定部分的 Node.js 流。
+          const nodeStream = createReadStream(moviePath, { start, end });
+          const webStream = Readable.toWeb(nodeStream) as any;
+
+          // 5. 构建流式响应的特定头。
+          const streamHeaders = {
+            ...headers,
+            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+            "Content-Length": chunksize.toString(),
+          };
+
+          // 6. 返回 206 Partial Content 状态码和部分文件流。
+          return c.body(webStream, 206, streamHeaders);
+        }
+      } catch (e) {
+        console.log(e);
+        throw new HTTPException(404, { message: "Server Error" });
+      }
+    }
+  );
