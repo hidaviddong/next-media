@@ -3,7 +3,6 @@ import { movie } from "@/server/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
-import { MovieHeader } from "./movie-header";
 import { MovieDetail } from "./movie-detail";
 
 export default async function Page({
@@ -30,7 +29,6 @@ export default async function Page({
 
   return (
     <div className="min-h-screen">
-      <MovieHeader movieRecord={movieRecord} posterUrl={posterUrl} />
       <MovieDetail
         path={path}
         posterUrl={posterUrl}

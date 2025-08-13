@@ -14,12 +14,14 @@ import { hasPlayButtonClickAtom } from "@/lib/store";
 import MoviePlayer from "./movie-player";
 import type { Movie } from "@/lib/types";
 import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
 
 interface MovieDetailProps {
   posterUrl: string;
   movieRecord: Movie;
   path: string;
 }
+
 export function MovieDetail({
   posterUrl,
   movieRecord,
@@ -31,6 +33,39 @@ export function MovieDetail({
 
   return (
     <div className="container mx-auto px-6 py-8">
+      {/* Back Button with Movie Poster */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        className="mb-6"
+      >
+        <Button
+          variant="ghost"
+          className="h-auto p-0 cursor-pointer"
+          onClick={() => setHasPlayButtonClick(false)}
+        >
+          <motion.div
+            layoutId={`movie-${movieRecord.tmdbId}`}
+            className="w-8 h-8 rounded-md overflow-hidden"
+          >
+            {posterUrl ? (
+              <Image
+                src={posterUrl}
+                alt={`Poster for ${movieRecord.name}`}
+                width={32}
+                height={32}
+                className="object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-neutral-200 flex items-center justify-center">
+                <span className="text-xs text-neutral-500">No Image</span>
+              </div>
+            )}
+          </motion.div>
+        </Button>
+      </motion.div>
+
       <AnimatePresence initial={false} mode="wait">
         {hasPlayButtonClick ? (
           <motion.div
@@ -54,11 +89,11 @@ export function MovieDetail({
             {/* Poster */}
             <div className="lg:col-span-1">
               <div className="w-full max-w-sm mx-auto lg:mx-0">
-                <motion.div layoutId="poster">
-                  <AspectRatio
-                    ratio={2 / 3}
-                    className="rounded-lg overflow-hidden shadow-lg border border-neutral-200"
-                  >
+                <motion.div
+                  layoutId={`movie-${movieRecord.tmdbId}`}
+                  className="rounded-lg overflow-hidden shadow-lg border border-neutral-200"
+                >
+                  <AspectRatio ratio={2 / 3}>
                     {posterUrl ? (
                       <Image
                         src={posterUrl}
@@ -81,7 +116,7 @@ export function MovieDetail({
             <div className="lg:col-span-2 space-y-6">
               <div className="space-y-4">
                 <motion.h1
-                  layoutId="title"
+                  layoutId={`title-${movieRecord.tmdbId}`}
                   className="text-3xl lg:text-5xl font-bold text-neutral-900 leading-tight"
                 >
                   {movieRecord.name}
@@ -90,7 +125,9 @@ export function MovieDetail({
                 <div className="flex flex-wrap items-center gap-4 text-neutral-600">
                   {movieRecord.year && (
                     <motion.div
-                      layoutId="year"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2, duration: 0.3 }}
                       className="flex items-center gap-2"
                     >
                       <Calendar className="w-4 h-4" />
@@ -100,11 +137,22 @@ export function MovieDetail({
                 </div>
 
                 {movieRecord.overview && (
-                  <p className="text-lg text-neutral-700 leading-relaxed max-w-3xl">
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.4 }}
+                    className="text-lg text-neutral-700 leading-relaxed max-w-3xl"
+                  >
                     {movieRecord.overview}
-                  </p>
+                  </motion.p>
                 )}
-                <div className="flex flex-wrap gap-3 pt-4">
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.4 }}
+                  className="flex flex-wrap gap-3 pt-4"
+                >
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -120,7 +168,7 @@ export function MovieDetail({
                       <p>{path}</p>
                     </TooltipContent>
                   </Tooltip>
-                </div>
+                </motion.div>
               </div>
             </div>
           </motion.div>

@@ -8,9 +8,11 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Film className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">Movies</h1>
+          <h1 className="text-3xl font-heading font-bold tracking-tight">
+            Movies
+          </h1>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button className="flex items-center gap-2 font-medium">
           <Plus className="h-4 w-4" />
           Add Movie
         </Button>
