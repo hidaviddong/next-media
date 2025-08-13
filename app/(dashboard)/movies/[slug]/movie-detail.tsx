@@ -1,7 +1,7 @@
 "use client";
 
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { AlignLeftIcon, Calendar, MoveLeftIcon, Play } from "lucide-react";
+import { Calendar, MoveLeftIcon, Play } from "lucide-react";
 import Image from "next/image";
 import {
   Tooltip,
@@ -73,12 +73,15 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="flex justify-center items-center min-h-[60vh] lg:min-h-0"
           >
             {moviePath && movieRecord.poster && (
-              <MoviePlayer
-                moviePath={moviePath}
-                posterPath={movieRecord.poster}
-              />
+              <div className="w-full max-w-4xl mx-auto px-4">
+                <MoviePlayer
+                  moviePath={moviePath}
+                  posterPath={movieRecord.poster}
+                />
+              </div>
             )}
           </motion.div>
         ) : (
@@ -92,7 +95,7 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
           >
             {/* Poster */}
             <div className="lg:col-span-1">
-              <div className="w-full max-w-sm mx-auto lg:mx-0">
+              <div className="w-full max-w-48 sm:max-w-xs lg:max-w-sm mx-auto lg:mx-0">
                 <motion.div
                   layoutId={`movie-${movieRecord.tmdbId}`}
                   layout="position"
@@ -118,7 +121,7 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
               <div className="space-y-4">
                 <motion.h1
                   layoutId={`title-${movieRecord.tmdbId}`}
-                  className="text-3xl lg:text-5xl font-bold text-neutral-900 leading-tight"
+                  className="text-2xl sm:text-3xl lg:text-5xl font-bold text-neutral-900 leading-tight"
                 >
                   {movieRecord.name}
                 </motion.h1>
@@ -142,7 +145,7 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.4 }}
-                    className="text-lg text-neutral-700 leading-relaxed max-w-3xl"
+                    className="text-base sm:text-lg text-neutral-700 leading-relaxed max-w-3xl"
                   >
                     {movieRecord.overview}
                   </motion.p>
@@ -166,7 +169,7 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
                           setHasPlayButtonClick(true);
                         }}
                         size="lg"
-                        className="bg-neutral-900 hover:bg-neutral-800 text-white cursor-pointer"
+                        className="w-full sm:w-auto bg-neutral-900 hover:bg-neutral-800 text-white cursor-pointer"
                       >
                         <Play className="w-5 h-5 mr-2" />
                         Play
