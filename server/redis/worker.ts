@@ -7,6 +7,7 @@ import { db } from "../drizzle";
 import { nanoid } from "nanoid";
 import { TMDB_BASE_URL } from "@/lib/constant";
 import type { TmdbApiRequestJob, TmdbMovieResponse } from "@/lib/types";
+import path from "node:path";
 
 const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN!;
 
@@ -97,9 +98,7 @@ export const tmdbApiRequestWorker = new Worker(
     await db.insert(library_movies).values({
       libraryId: lib.id,
       movieId: movieRecord.id,
-      path: libraryPath.endsWith("/")
-        ? libraryPath + filePath
-        : libraryPath + "/" + filePath,
+      path: path.join(libraryPath, filePath),
     });
 
     console.log(

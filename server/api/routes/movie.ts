@@ -11,6 +11,8 @@ import { nanoid } from "nanoid";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { Readable } from "node:stream";
+import path from "node:path";
+import { spawn } from "node:child_process";
 
 const queueSchema = z.object({
   movies: z.array(
@@ -255,53 +257,87 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       }
 
       try {
-        const movieName = moviePath.split("/").pop();
-        const fullPath = `${moviePath}/${movieName}.mp4`;
-        const stats = await fs.stat(fullPath);
-        const fileSize = stats.size;
-        const rangeHeader = c.req.header("range");
-        const headers = {
-          "Content-Type": "video/mp4",
-          "Accept-Ranges": "bytes",
-        };
+        // 优先拿mp4
+        const files = await fs.readdir(moviePath);
+        const videoFile = files.find(
+          (f) => f.endsWith(".mp4") || f.endsWith(".mkv")
+        );
 
-        if (!rangeHeader) {
-          throw new HTTPException(400, {
-            message: "Should add range in request header",
+        if (!videoFile) {
+          throw new HTTPException(404, {
+            message: "Video file not found in directory",
           });
-        } else {
-          // 有rangeHeader 解析
-          // 1. 手动解析 Range 头 (例如 "bytes=0-1023")
-          const parts = rangeHeader.replace(/bytes=/, "").split("-");
-          const start = parseInt(parts[0], 10);
-          // 如果 parts[1] 不存在 (例如 "bytes=1024-")，则表示请求到文件末尾。
-          const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        }
 
-          // 2. 健壮性检查：确保请求的范围在文件大小之内。
-          if (start >= fileSize || end >= fileSize || start > end) {
-            c.header("Content-Range", `bytes */${fileSize}`);
-            return c.json({
-              success: false,
-              message: "Range Not Satisfiable",
+        const fullPath = path.join(moviePath, videoFile);
+        const extension = path.extname(videoFile);
+
+        if (extension === ".mp4") {
+          // --- 策略 A：Direct Play for MP4
+          console.log(`Direct Play for: ${fullPath}`);
+          const stats = await fs.stat(fullPath);
+          const fileSize = stats.size;
+          const rangeHeader = c.req.header("range");
+
+          if (!rangeHeader) {
+            throw new HTTPException(400, {
+              message: "Range header is required",
             });
           }
 
-          // 3. 计算本次请求要发送的数据块大小。
-          const chunksize = end - start + 1;
+          const parts = rangeHeader.replace(/bytes=/, "").split("-");
+          const start = parseInt(parts[0], 10);
+          const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
 
-          // 4. 创建一个只读取文件特定部分的 Node.js 流。
+          if (start >= fileSize || end >= fileSize || start > end) {
+            c.header("Content-Range", `bytes */${fileSize}`);
+            throw new HTTPException(416, { message: "Range Not Satisfiable" });
+          }
+
+          const chunksize = end - start + 1;
           const nodeStream = createReadStream(fullPath, { start, end });
           const webStream = Readable.toWeb(nodeStream) as any;
 
-          // 5. 构建流式响应的特定头。
-          const streamHeaders = {
-            ...headers,
+          const headers = {
+            "Content-Type": "video/mp4",
+            "Accept-Ranges": "bytes",
             "Content-Range": `bytes ${start}-${end}/${fileSize}`,
             "Content-Length": chunksize.toString(),
           };
 
-          // 6. 返回 206 Partial Content 状态码和部分文件流。
-          return c.body(webStream, 206, streamHeaders);
+          return c.body(webStream, 206, headers);
+        } else if (extension === ".mkv") {
+          console.log(`Remuxing for: ${fullPath}`);
+          // 对于实时 remux，我们告诉浏览器我们在发送 mp4
+          const headers = { "Content-Type": "video/mp4" };
+
+          // FFmpeg 参数 - 使用分片式 MP4 的终极 movflags
+          const ffmpegArgs = [
+            "-i",
+            fullPath,
+            // 'frag_keyframe+empty_moov' 会创建一个分片式的、适合流式传输的 MP4。
+            // 'faststart' 在这里作为补充，确保兼容性。
+            "-movflags",
+            "frag_keyframe+empty_moov+faststart",
+            "-c",
+            "copy", // 直接复制
+            "-sn", // 移除字幕
+            "-f",
+            "mp4", // 输出格式为 mp4
+            "pipe:1", // 输出到标准输出
+          ];
+
+          console.log("Attempting to process file:", fullPath);
+          const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
+
+          ffmpegProcess.stderr.on("data", (data) => {
+            console.error(`FFmpeg stderr: ${data}`);
+          });
+
+          const webStream = Readable.toWeb(ffmpegProcess.stdout) as any;
+
+          // TODO: 直接将流返回给客户端。状态码是 200 OK，因为我们没有处理 Range
+          return c.body(webStream, 200, headers);
         }
       } catch (e) {
         throw new HTTPException(404, { message: "Server Error" });
