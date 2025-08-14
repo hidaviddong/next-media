@@ -9,7 +9,7 @@ import z from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { nanoid } from "nanoid";
 import fs from "node:fs/promises";
-import { createReadStream } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import { Readable } from "node:stream";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -32,6 +32,43 @@ const playSchema = z.object({
 const moviePathSchema = z.object({
   tmdbId: z.string(),
 });
+
+/**
+ * 将一个视频文件重封装为 MP4，并返回一个在转换完成后解析的 Promise。
+ * @param inputPath 输入文件的路径
+ * @param outputPath 输出文件的路径
+ */
+function remuxToMp4(inputPath: string, outputPath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    console.log(`Starting remux from ${inputPath} to ${outputPath}`);
+
+    const ffmpegArgs = ["-i", inputPath, "-c", "copy", "-sn", outputPath];
+    const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
+
+    let errorOutput = "";
+    ffmpegProcess.stderr.on("data", (data) => {
+      errorOutput += data.toString();
+    });
+
+    ffmpegProcess.on("close", (code) => {
+      if (code === 0) {
+        console.log(`Successfully remuxed to ${outputPath}`);
+        resolve(); // 转换成功，Promise 完成
+      } else {
+        console.error(
+          `Failed to remux ${inputPath}. FFmpeg exited with code ${code}.`
+        );
+        console.error("FFmpeg error output:", errorOutput);
+        reject(new Error(`FFmpeg failed with code ${code}`)); // 转换失败，Promise 拒绝
+      }
+    });
+
+    ffmpegProcess.on("error", (err) => {
+      console.error("Failed to start FFmpeg process.", err);
+      reject(err);
+    });
+  });
+}
 
 export const movieRoute = new Hono<{ Variables: Variables }>()
   .get("/lists", async (c) => {
@@ -263,99 +300,84 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           (f) => f.endsWith(".mp4") || f.endsWith(".mkv")
         );
 
-        const signal = c.req.raw.signal;
-
         if (!videoFile) {
           throw new HTTPException(404, {
             message: "Video file not found in directory",
           });
         }
 
-        const fullPath = path.join(moviePath, videoFile);
-        const extension = path.extname(videoFile);
+        const originalPath = path.join(moviePath, videoFile);
+        let playablePath = originalPath;
+        if (path.extname(originalPath) === ".mkv") {
+          const CACHE_DIR = path.join(moviePath, ".cache", "transcode");
+          fs.mkdir(CACHE_DIR, { recursive: true });
 
-        if (extension === ".mp4") {
-          // --- 策略 A：Direct Play for MP4
-          console.log(`Direct Play for: ${fullPath}`);
-          const stats = await fs.stat(fullPath);
-          const fileSize = stats.size;
-          const rangeHeader = c.req.header("range");
+          const cacheId = Buffer.from(originalPath).toString("base64url");
+          const cachedFilePath = path.join(CACHE_DIR, `${cacheId}.mp4`);
 
-          if (!rangeHeader) {
-            throw new HTTPException(400, {
-              message: "Range header is required",
-            });
+          // 1. 检查缓存是否存在
+          if (!existsSync(cachedFilePath)) {
+            // --- 如果缓存不存在，则【等待】转换完成 ---
+            try {
+              await remuxToMp4(originalPath, cachedFilePath);
+              // 转换完成后，将播放路径指向缓存文件
+              playablePath = cachedFilePath;
+            } catch (error) {
+              // 如果 FFmpeg 转换失败，则抛出服务器错误
+              console.error("FFMPEG conversion failed:", error);
+              throw new HTTPException(500, {
+                message: "Failed to process video file.",
+              });
+            }
+          } else {
+            // --- 如果缓存已存在，直接使用缓存文件 ---
+            console.log(`Serving MKV from cache: ${cachedFilePath}`);
+            playablePath = cachedFilePath;
           }
-
-          const parts = rangeHeader.replace(/bytes=/, "").split("-");
-          const start = parseInt(parts[0], 10);
-          const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-
-          if (start >= fileSize || end >= fileSize || start > end) {
-            c.header("Content-Range", `bytes */${fileSize}`);
-            throw new HTTPException(416, { message: "Range Not Satisfiable" });
-          }
-
-          const chunksize = end - start + 1;
-          const nodeStream = createReadStream(fullPath, { start, end });
-          const webStream = Readable.toWeb(nodeStream) as any;
-
-          signal.onabort = () => {
-            console.log(
-              `Client disconnected from MP4 stream. Destroying file stream for: ${fullPath}`
-            );
-            nodeStream.destroy();
-          };
-
-          const headers = {
-            "Content-Type": "video/mp4",
-            "Accept-Ranges": "bytes",
-            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-            "Content-Length": chunksize.toString(),
-          };
-
-          return c.body(webStream, 206, headers);
-        } else if (extension === ".mkv") {
-          console.log(`Remuxing for: ${fullPath}`);
-          // 对于实时 remux，我们告诉浏览器我们在发送 mp4
-          const headers = { "Content-Type": "video/mp4" };
-
-          // FFmpeg 参数 - 使用分片式 MP4 的终极 movflags
-          const ffmpegArgs = [
-            "-i",
-            fullPath,
-            // 'frag_keyframe+empty_moov' 会创建一个分片式的、适合流式传输的 MP4。
-            // 'faststart' 在这里作为补充，确保兼容性。
-            "-movflags",
-            "frag_keyframe+empty_moov+faststart",
-            "-c",
-            "copy", // 直接复制
-            "-sn", // 移除字幕
-            "-f",
-            "mp4", // 输出格式为 mp4
-            "pipe:1", // 输出到标准输出
-          ];
-
-          console.log("Attempting to process file:", fullPath);
-          const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
-
-          signal.onabort = () => {
-            console.log(
-              `Client disconnected from MKV remux. Terminating FFmpeg process for: ${fullPath}`
-            );
-            // This sends a SIGTERM signal to the FFmpeg process, killing it.
-            ffmpegProcess.kill();
-          };
-
-          ffmpegProcess.stderr.on("data", (data) => {
-            console.error(`FFmpeg stderr: ${data}`);
-          });
-
-          const webStream = Readable.toWeb(ffmpegProcess.stdout) as any;
-
-          // TODO: 直接将流返回给客户端。状态码是 200 OK，因为我们没有处理 Range
-          return c.body(webStream, 200, headers);
         }
+
+        const signal = c.req.raw.signal;
+
+        // Direct Play for MP4
+        console.log(`Direct Play for: ${playablePath}`);
+        const stats = await fs.stat(playablePath);
+        const fileSize = stats.size;
+        const rangeHeader = c.req.header("range");
+
+        if (!rangeHeader) {
+          throw new HTTPException(400, {
+            message: "Range header is required",
+          });
+        }
+
+        const parts = rangeHeader.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+        if (start >= fileSize || end >= fileSize || start > end) {
+          c.header("Content-Range", `bytes */${fileSize}`);
+          throw new HTTPException(416, { message: "Range Not Satisfiable" });
+        }
+
+        const chunksize = end - start + 1;
+        const nodeStream = createReadStream(playablePath, { start, end });
+        const webStream = Readable.toWeb(nodeStream) as any;
+
+        signal.onabort = () => {
+          console.log(
+            `Client disconnected from MP4 stream. Destroying file stream for: ${playablePath}`
+          );
+          nodeStream.destroy();
+        };
+
+        const headers = {
+          "Content-Type": "video/mp4",
+          "Accept-Ranges": "bytes",
+          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+          "Content-Length": chunksize.toString(),
+        };
+
+        return c.body(webStream, 206, headers);
       } catch (e) {
         throw new HTTPException(404, { message: "Server Error" });
       }
