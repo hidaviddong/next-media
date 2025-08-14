@@ -263,6 +263,8 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           (f) => f.endsWith(".mp4") || f.endsWith(".mkv")
         );
 
+        const signal = c.req.raw.signal;
+
         if (!videoFile) {
           throw new HTTPException(404, {
             message: "Video file not found in directory",
@@ -298,6 +300,13 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           const nodeStream = createReadStream(fullPath, { start, end });
           const webStream = Readable.toWeb(nodeStream) as any;
 
+          signal.onabort = () => {
+            console.log(
+              `Client disconnected from MP4 stream. Destroying file stream for: ${fullPath}`
+            );
+            nodeStream.destroy();
+          };
+
           const headers = {
             "Content-Type": "video/mp4",
             "Accept-Ranges": "bytes",
@@ -329,6 +338,14 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
 
           console.log("Attempting to process file:", fullPath);
           const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
+
+          signal.onabort = () => {
+            console.log(
+              `Client disconnected from MKV remux. Terminating FFmpeg process for: ${fullPath}`
+            );
+            // This sends a SIGTERM signal to the FFmpeg process, killing it.
+            ffmpegProcess.kill();
+          };
 
           ffmpegProcess.stderr.on("data", (data) => {
             console.error(`FFmpeg stderr: ${data}`);
