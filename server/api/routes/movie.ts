@@ -12,7 +12,12 @@ import fs from "node:fs/promises";
 import { createReadStream, existsSync } from "node:fs";
 import { Readable } from "node:stream";
 import path from "node:path";
-import { getMovieInfo, remuxToMp4, SubtitleTrackInfo } from "@/server/utils";
+import {
+  getMovieInfo,
+  remuxToMp4,
+  SubtitleTrackInfo,
+  waitForFile,
+} from "@/server/utils";
 import { spawn } from "node:child_process";
 
 const queueSchema = z.object({
@@ -281,7 +286,6 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           if (!existsSync(cachedFilePath)) {
             // --- 如果缓存不存在，则【等待】转换完成 ---
             try {
-              
               await remuxToMp4(originalPath, cachedFilePath);
               // 转换完成后，将播放路径指向缓存文件
               playablePath = cachedFilePath;
@@ -346,6 +350,138 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       }
     }
   )
+  // 在你的 movieRoute.ts 中，用这个版本完全替换掉现有的 .get("/playHls/*")
+
+  .get(
+    "/playHls/*",
+    zValidator("query", playSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      try {
+        const { moviePath } = c.req.valid("query");
+        const HLS_CACHE_DIR = path.join(moviePath, ".cache", "hls");
+        await fs.mkdir(HLS_CACHE_DIR, { recursive: true });
+
+        const requestedFile = path.basename(c.req.path);
+        const requestedFilePath = path.join(HLS_CACHE_DIR, requestedFile);
+        const lockFilePath = path.join(HLS_CACHE_DIR, "transcoding.lock");
+
+        // === .m3u8 请求处理逻辑 ===
+        if (requestedFile.endsWith(".m3u8")) {
+          // 只有在转码未开始时才启动 ffmpeg
+          if (!existsSync(lockFilePath)) {
+            if (existsSync(HLS_CACHE_DIR)) {
+              await fs.rm(HLS_CACHE_DIR, { recursive: true, force: true });
+              await fs.mkdir(HLS_CACHE_DIR, { recursive: true });
+            }
+            await fs.writeFile(lockFilePath, "locked");
+
+            const files = await fs.readdir(moviePath);
+            const videoFile = files.find(
+              (f) => f.endsWith(".mp4") || f.endsWith(".mkv")
+            );
+            if (!videoFile)
+              throw new HTTPException(404, { message: "Video not found" });
+
+            const videoFullPath = path.join(moviePath, videoFile);
+            const m3u8AbsolutePath = path.join(HLS_CACHE_DIR, "output.m3u8");
+
+            const ffmpegArgs = [
+              "-y",
+              "-i",
+              videoFullPath,
+              "-c:v",
+              "copy",
+              "-c:a",
+              "aac",
+              "-b:a",
+              "192k",
+              "-sn",
+              "-f",
+              "hls",
+              "-hls_time",
+              "4",
+              "-hls_list_size",
+              "0",
+              "-hls_segment_filename",
+              path.join(HLS_CACHE_DIR, "segment%03d.ts"),
+              m3u8AbsolutePath,
+            ];
+
+            const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
+            // (你的 ffmpeg 日志和事件处理逻辑保持不变)
+            ffmpegProcess.stderr.on("data", (data) =>
+              console.log(`[FFMPEG-HLS]: ${data.toString()}`)
+            );
+            ffmpegProcess.on("error", (error) => {
+              console.error(`[FFMPEG-HLS-ERROR]: ${error.message}`);
+              fs.unlink(lockFilePath).catch(() => {});
+            });
+            ffmpegProcess.on("close", () => {
+              console.log(
+                `[FFMPEG-HLS-CLOSE]: Transcoding finished for ${moviePath}`
+              );
+              fs.unlink(lockFilePath).catch(() => {});
+            });
+            c.req.raw.signal.onabort = () => {
+              console.log("Client disconnected, killing FFmpeg process.");
+              ffmpegProcess.kill();
+            };
+          }
+
+          // 等待 m3u8 文件被 ffmpeg 创建
+          await waitForFile(requestedFilePath, 20000);
+
+          // 【关键】读取、修改并返回 m3u8 内容
+          const originalContent = await fs.readFile(requestedFilePath, "utf-8");
+          const modifiedContent = originalContent
+            .split("\n")
+            .map((line) =>
+              line.trim().endsWith(".ts")
+                ? `${line}?moviePath=${encodeURIComponent(moviePath)}`
+                : line
+            )
+            .join("\n");
+
+          c.header("Content-Type", "application/vnd.apple.mpegurl");
+          return c.body(modifiedContent);
+        }
+
+        // === .ts 请求处理逻辑 ===
+        else if (requestedFile.endsWith(".ts")) {
+          // 由于 m3u8 已被修改，这里的请求将包含 moviePath，因此权限中间件会通过
+          await waitForFile(requestedFilePath, 10000);
+
+          if (
+            !existsSync(requestedFilePath) ||
+            !path
+              .resolve(requestedFilePath)
+              .startsWith(path.resolve(HLS_CACHE_DIR))
+          ) {
+            throw new HTTPException(404, { message: "Segment not found" });
+          }
+
+          const fileStream = createReadStream(requestedFilePath);
+          const webStream = Readable.toWeb(fileStream) as any;
+          c.header("Content-Type", "video/mp2t");
+          return c.body(webStream, 200);
+        }
+
+        // 捕获其他不合法请求
+        else {
+          throw new HTTPException(400, { message: "Invalid HLS request." });
+        }
+      } catch (e: any) {
+        console.error("playHls error", e);
+        if (e instanceof HTTPException) throw e;
+        throw new HTTPException(500, { message: "Server Error" });
+      }
+    }
+  )
+
   .get(
     "/movieInfo",
     zValidator("query", playSchema, (result, c) => {

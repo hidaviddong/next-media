@@ -4,8 +4,9 @@ import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
 import { toast } from "sonner";
 import MovieInfo from "./movie-info";
 import { useMovieSubtitleLists } from "../hooks";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { SubtitleListsResponseType } from "@/lib/types";
+import Hls from "hls.js";
 
 export default function MoviePlayer({
   moviePath,
@@ -14,10 +15,30 @@ export default function MoviePlayer({
   moviePath: string;
   posterPath: string;
 }) {
+  const hls = new Hls();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { movieSubtitleListsQuery } = useMovieSubtitleLists(moviePath);
 
+  const { movieSubtitleListsQuery } = useMovieSubtitleLists(moviePath);
   const { data: movieSubtitleLists } = movieSubtitleListsQuery;
+
+  useEffect(() => {
+    // 确保只初始化一次 Hls
+    if (videoRef.current && Hls.isSupported()) {
+      const hls = new Hls();
+      // 关键修改：直接请求 .m3u8 文件，并将 moviePath 作为查询参数
+      const hlsSource = `/api/movie/playHls/output.m3u8?moviePath=${encodeURIComponent(
+        moviePath
+      )}`;
+
+      hls.loadSource(hlsSource);
+      hls.attachMedia(videoRef.current);
+
+      // 组件卸载时销毁 hls 实例
+      return () => {
+        hls.destroy();
+      };
+    }
+  }, [moviePath, videoRef]); // 依赖项为 moviePath 和 videoRef
 
   const getSubtitleSrc = (track: SubtitleListsResponseType[number]) => {
     const params = new URLSearchParams({ moviePath });
@@ -35,7 +56,7 @@ export default function MoviePlayer({
         <video
           ref={videoRef}
           controls
-          src={`/api/movie/play/?moviePath=${encodeURIComponent(moviePath)}`}
+          // src={`/api/movie/play/?moviePath=${encodeURIComponent(moviePath)}`}
           className="w-full h-full object-contain"
           onError={(e) => {
             toast.error(e.currentTarget.error?.message);
@@ -58,15 +79,6 @@ export default function MoviePlayer({
               />
             ))}
           Your browser does not support the video tag.
-          {/* <track
-            kind="subtitles"
-            srcLang="en"
-            label="English"
-            default
-            src={`/api/movie/subtitles?moviePath=${encodeURIComponent(
-              moviePath
-            )}`}
-          /> */}
         </video>
       </div>
 

@@ -1,6 +1,5 @@
 import { spawn } from "node:child_process";
-
-const BROWSER_UNSUPPORTED_AUDIO_FORMATS = ["dts", "ac3", "eac3", "truehd"];
+import { existsSync } from "node:fs";
 
 export interface MovieInfo {
   streams: Record<string, any>[];
@@ -106,5 +105,20 @@ export function getMovieInfo(moviePath: string): Promise<MovieInfo> {
         );
       }
     });
+  });
+}
+
+export function waitForFile(filePath: string, timeout = 20000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      if (existsSync(filePath)) {
+        clearInterval(interval);
+        resolve();
+      } else if (Date.now() - startTime > timeout) {
+        clearInterval(interval);
+        reject(new Error(`File creation timed out: ${filePath}`));
+      }
+    }, 500);
   });
 }
