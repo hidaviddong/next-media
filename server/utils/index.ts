@@ -13,10 +13,23 @@ export interface SubtitleTrackInfo {
   path?: string; // 如果是外部文件，它的路径
 }
 
+function parseTimeToSeconds(timeString: string) {
+  const parts = timeString.split(":");
+  const hours = parseFloat(parts[0]);
+  const minutes = parseFloat(parts[1]);
+  const seconds = parseFloat(parts[2]);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
 export async function remuxToMp4(
   inputPath: string,
-  outputPath: string
+  outputPath: string,
+  onProgress: (progress: number) => void
 ): Promise<void> {
+  const movieInfo = await getMovieInfo(inputPath);
+  const totalDurationString = movieInfo.format.duration;
+  const totalDurationInSeconds = parseFloat(totalDurationString);
+
   const ffmpegArgs: string[] = [
     "-i",
     inputPath,
@@ -33,13 +46,30 @@ export async function remuxToMp4(
 
     let errorOutput = "";
     ffmpegProcess.stderr.on("data", (data) => {
-      console.log(`[FFMPEG-LOG]: ${data.toString()}`);
-      errorOutput += data.toString();
+      const logLine = data.toString();
+      errorOutput += logLine; // 累积错误日志以备调试
+
+      // 使用正则表达式匹配 'time=' 字段
+      const timeMatch = logLine.match(/time=(\d{2}:\d{2}:\d{2}\.\d{2})/);
+
+      if (timeMatch && timeMatch[1]) {
+        const currentTimeString = timeMatch[1];
+        const currentTimeInSeconds = parseTimeToSeconds(currentTimeString);
+
+        // 计算进度百分比
+        if (totalDurationInSeconds > 0) {
+          const progress = Math.round(
+            (currentTimeInSeconds / totalDurationInSeconds) * 100
+          );
+          // 调用回调函数，并确保进度不超过 100
+          onProgress(Math.min(100, progress));
+        }
+      }
     });
 
     ffmpegProcess.on("close", (code) => {
       if (code === 0) {
-        console.log(`Successfully processed ${inputPath} to ${outputPath}`);
+        onProgress(100);
         resolve();
       } else {
         const errorMessage = `Failed to process ${inputPath}. FFmpeg exited with code ${code}.`;

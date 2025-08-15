@@ -5,6 +5,7 @@ import {
   Gauge,
   HardDrive,
   Replace,
+  ServerCog,
   Video,
   Zap,
 } from "lucide-react";
@@ -17,9 +18,38 @@ import {
 } from "@/components/ui/tooltip";
 import { formatBitrate, formatSize } from "@/lib/utils";
 
+const playbackTypeConfig = {
+  direct: {
+    Icon: Zap,
+    text: "Direct Play",
+    tooltip: "Your device natively supports this file's format and codecs.",
+    className:
+      "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  },
+  remux: {
+    Icon: Replace,
+    text: "Remux",
+    tooltip:
+      "The original file container is being remuxed to MP4 in real-time.",
+    className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  },
+  hls: {
+    Icon: ServerCog,
+    text: "Transcode (HLS)",
+    tooltip:
+      "The file's codecs are incompatible and are being transcoded in real-time.",
+    className:
+      "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  },
+};
+
 export default function MovieInfo({ moviePath }: { moviePath: string }) {
   const { movieInfoQuery } = useMovieInfo(moviePath);
-  const isTranscoded = movieInfoQuery.data?.isTranscoded;
+  const movieType = movieInfoQuery.data?.type;
+
+  const currentTypeInfo =
+    playbackTypeConfig[movieType as keyof typeof playbackTypeConfig];
+
   const movieInfo = movieInfoQuery.data?.movieInfo;
   if (!movieInfo) {
     return <></>;
@@ -52,32 +82,22 @@ export default function MovieInfo({ moviePath }: { moviePath: string }) {
 
       {displayInfo && (
         <TooltipProvider delayDuration={150}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge
-                variant="secondary"
-                className={`flex items-center gap-1.5 py-1 ${
-                  isTranscoded
-                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                    : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                }`}
-              >
-                {isTranscoded ? (
-                  <Replace className="w-3.5 h-3.5" />
-                ) : (
-                  <Zap className="w-3.5 h-3.5" />
-                )}
-                <span>{isTranscoded ? "Remuxed" : "Direct Play"}</span>
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>
-                {isTranscoded
-                  ? "The original file has been remuxed to MP4 format"
-                  : "Your device natively supports this file format"}
-              </p>
-            </TooltipContent>
-          </Tooltip>
+          {currentTypeInfo && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="secondary"
+                  className={`flex items-center gap-1.5 py-1 ${currentTypeInfo.className}`}
+                >
+                  <currentTypeInfo.Icon className="w-3.5 h-3.5" />
+                  <span>{currentTypeInfo.text}</span>
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{currentTypeInfo.tooltip}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
           {/* 分辨率 */}
           {displayInfo.resolution && (

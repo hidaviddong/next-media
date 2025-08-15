@@ -6,8 +6,13 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../drizzle";
 import { nanoid } from "nanoid";
 import { TMDB_BASE_URL } from "@/lib/constant";
-import type { TmdbApiRequestJob, TmdbMovieResponse } from "@/lib/types";
+import type {
+  TmdbApiRequestJob,
+  TmdbMovieResponse,
+  RemuxToMp4Job,
+} from "@/lib/types";
 import path from "node:path";
+import { remuxToMp4 } from "../utils";
 
 const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN!;
 
@@ -121,5 +126,27 @@ tmdbApiRequestWorker.on("completed", (job) => {
 });
 
 tmdbApiRequestWorker.on("failed", (job, err) => {
+  console.log(`${job?.id} has failed with ${err.message}`);
+});
+
+export const remuxToMp4Worker = new Worker(
+  "remux-to-mp4",
+  async (job: Job<RemuxToMp4Job>) => {
+    const { inputPath, outputPath } = job.data;
+    await remuxToMp4(inputPath, outputPath, (progress: number) => {
+      console.log(`Job ${job.id} progress: ${progress}%`);
+      job.updateProgress(progress);
+    });
+  },
+  {
+    connection,
+  }
+);
+
+remuxToMp4Worker.on("completed", (job) => {
+  console.log(`${job.id} has completed!`);
+});
+
+remuxToMp4Worker.on("failed", (job, err) => {
   console.log(`${job?.id} has failed with ${err.message}`);
 });

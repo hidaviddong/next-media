@@ -69,3 +69,8 @@ export interface TmdbMovieResponse {
   vote_average: number;
   vote_count: number;
 }
+
+export interface RemuxToMp4Job {
+  inputPath: string;
+  outputPath: string;
+}
