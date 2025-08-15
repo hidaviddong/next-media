@@ -37,11 +37,15 @@ const playSchema = z.object({
   type: z.enum(["direct", "remux", "hls"]),
 });
 
-const movieInfoSchema = z.object({
+const directPlaySchema = z.object({
   moviePath: z.string(),
 });
 
-const subtitleListsSchema = movieInfoSchema.clone();
+const remuxSchema = z.object({
+  moviePath: z.string(),
+});
+const movieInfoSchema = directPlaySchema.clone();
+const subtitleListsSchema = directPlaySchema.clone();
 
 const subtitleSchema = z.object({
   moviePath: z.string(),
@@ -260,18 +264,23 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
     await next();
   })
   .get(
-    "/play",
-    zValidator("query", playSchema, (result, c) => {
+    "/directPlay",
+    zValidator("query", directPlaySchema, (result, c) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
     }),
     async (c) => {
-      const { moviePath } = c.req.valid("query");
-
-      async function directPlay(filePath: string) {
+      try {
+        const { moviePath } = c.req.valid("query");
+        const files = await fs.readdir(moviePath);
+        const videoFile = files.find((f) => f.endsWith(".mp4"));
+        if (!videoFile) {
+          throw new HTTPException(404, { message: "Video file not found" });
+        }
+        const originalPath = path.join(moviePath, videoFile);
         const signal = c.req.raw.signal;
-        const stats = await fs.stat(filePath);
+        const stats = await fs.stat(originalPath);
         const fileSize = stats.size;
         const rangeHeader = c.req.header("range");
 
@@ -287,16 +296,18 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
 
         if (start >= fileSize || end >= fileSize || start > end) {
           c.header("Content-Range", `bytes */${fileSize}`);
-          throw new HTTPException(416, { message: "Range Not Satisfiable" });
+          throw new HTTPException(416, {
+            message: "Range Not Satisfiable",
+          });
         }
 
         const chunksize = end - start + 1;
-        const nodeStream = createReadStream(filePath, { start, end });
+        const nodeStream = createReadStream(originalPath, { start, end });
         const webStream = Readable.toWeb(nodeStream) as any;
 
         signal.onabort = () => {
           console.log(
-            `Client disconnected from MP4 stream. Destroying file stream for: ${filePath}`
+            `Client disconnected from MP4 stream. Destroying file stream for: ${moviePath}`
           );
           nodeStream.destroy();
         };
@@ -308,91 +319,92 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           "Content-Length": chunksize.toString(),
         };
         return c.body(webStream, 206, headers);
-      }
-
-      try {
-        const files = await fs.readdir(moviePath);
-        const videoFile = files.find(
-          (f) => f.endsWith(".mp4") || f.endsWith(".mkv")
-        );
-
-        if (!videoFile) {
-          throw new HTTPException(404, {
-            message: "Video file not found in directory",
-          });
-        }
-
-        const originalPath = path.join(moviePath, videoFile);
-
-        if (path.extname(originalPath) === ".mkv") {
-          const movieInfo = await getMovieInfo(originalPath);
-          const videoStream = movieInfo.streams.find(
-            (stream) => stream.codec_type === "video"
-          );
-          const audioStream = movieInfo.streams.find(
-            (stream) => stream.codec_type === "audio"
-          );
-
-          const isVideoSupported = videoStream?.codec_name === "h264";
-
-          const isAudioSupported = audioStream?.codec_name === "aac";
-
-          if (isVideoSupported && isAudioSupported) {
-            // remux
-            const CACHE_DIR = path.join(moviePath, ".cache", "transcode");
-            fs.mkdir(CACHE_DIR, { recursive: true });
-
-            const cacheId = Buffer.from(originalPath).toString("base64url");
-            const cachedFilePath = path.join(CACHE_DIR, `${cacheId}.mp4`);
-
-            // 检查缓存是否存在
-            if (existsSync(cachedFilePath)) {
-              await directPlay(cachedFilePath);
-            } else {
-              // 交给队列去转码
-              const jobId = `remux:${cacheId}`;
-              const existingJob = await remuxToMp4Queue.getJob(jobId);
-              if (
-                existingJob &&
-                !(await existingJob.isCompleted()) &&
-                !(await existingJob.isFailed())
-              ) {
-                console.log(`Job ${jobId} is already in the queue or active.`);
-                c.status(202);
-                return c.json({
-                  status: "PROCESSING",
-                  message:
-                    "Video is being prepared. Please check back shortly.",
-                  jobId: jobId,
-                });
-              } else {
-                console.log(`Adding job ${jobId} to remux-to-mp4queue`);
-                await remuxToMp4Queue.add(
-                  "remux-to-mp4",
-                  {
-                    inputPath: originalPath,
-                    outputPath: cachedFilePath,
-                  },
-                  { jobId }
-                );
-
-                c.status(202);
-                return c.json({
-                  status: "QUEUED",
-                  message: "Video processing has started.",
-                  jobId: jobId,
-                });
-              }
-            }
-          } else {
-            // m3u8
-          }
-        } else {
-          await directPlay(originalPath);
-        }
       } catch (e) {
+        console.log(e);
         throw new HTTPException(404, { message: "Server Error" });
       }
+    }
+  )
+  .post(
+    "/remux",
+    zValidator("json", remuxSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const { moviePath } = c.req.valid("json");
+      const files = await fs.readdir(moviePath);
+      const videoFile = files.find((f) => f.endsWith(".mkv"));
+      if (!videoFile) {
+        throw new HTTPException(404, { message: "Video file not found" });
+      }
+      const CACHE_DIR = path.join(moviePath, ".cache", "transcode");
+      fs.mkdir(CACHE_DIR, { recursive: true });
+      const originalPath = path.join(moviePath, videoFile);
+      const cacheId = Buffer.from(originalPath).toString("base64url");
+      const cachedFilePath = path.join(CACHE_DIR, `${cacheId}.mp4`);
+      if (existsSync(cachedFilePath)) {
+        return c.json({
+          status: "READY",
+          message: "Video is ready to play.",
+          cachedFilePath: cachedFilePath,
+        });
+      } else {
+        const jobId = `remux:${cacheId}`;
+        const existingJob = await remuxToMp4Queue.getJob(jobId);
+        if (
+          existingJob &&
+          !(await existingJob.isCompleted()) &&
+          !(await existingJob.isFailed())
+        ) {
+          console.log(`Job ${jobId} is already in the queue or active.`);
+          return c.json(
+            {
+              status: "PROCESSING",
+              message: "Video is being prepared. Please check back shortly.",
+              jobId: jobId,
+            },
+            202
+          );
+        } else {
+          console.log(`Adding job ${jobId} to remux-to-mp4queue`);
+          await remuxToMp4Queue.add(
+            "remux-to-mp4",
+            {
+              inputPath: originalPath,
+              outputPath: cachedFilePath,
+            },
+            { jobId }
+          );
+
+          return c.json(
+            {
+              status: "QUEUED",
+              message: "Video processing has started.",
+              jobId: jobId,
+            },
+            202
+          );
+        }
+      }
+    }
+  )
+  .get(
+    "/remuxProgress",
+    zValidator("query", remuxStatusSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const { jobId } = c.req.valid("query");
+      const job = await remuxToMp4Queue.getJob(jobId);
+      if (!job) {
+        throw new HTTPException(404, { message: "Job not found" });
+      }
+      const progress = await job.getProgress();
+      return c.json({ progress });
     }
   )
   .get(
@@ -668,22 +680,5 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       } catch (e) {
         throw new HTTPException(404, { message: "Server Error" });
       }
-    }
-  )
-  .get(
-    "/remuxProgress",
-    zValidator("query", remuxStatusSchema, (result, c) => {
-      if (!result.success) {
-        throw new HTTPException(400, { message: "Invalid Request" });
-      }
-    }),
-    async (c) => {
-      const { jobId } = c.req.valid("query");
-      const job = await remuxToMp4Queue.getJob(jobId);
-      if (!job) {
-        throw new HTTPException(404, { message: "Job not found" });
-      }
-      const progress = await job.getProgress();
-      return c.json({ progress });
     }
   );

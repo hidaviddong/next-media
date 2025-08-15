@@ -23,20 +23,30 @@ export default function MoviePlayer({
 
   useEffect(() => {
     // 确保只初始化一次 Hls
-    if (videoRef.current && Hls.isSupported() && movieType === "hls") {
-      const hls = new Hls();
-      // 关键修改：直接请求 .m3u8 文件，并将 moviePath 作为查询参数
-      const hlsSource = `/api/movie/playHls/output.m3u8?moviePath=${encodeURIComponent(
-        moviePath
-      )}`;
-
-      hls.loadSource(hlsSource);
-      hls.attachMedia(videoRef.current);
-      return () => {
-        hls.destroy();
-      };
+    if (videoRef.current && movieType) {
+      switch (movieType) {
+        case "direct":
+          videoRef.current.src = `/api/movie/directPlay?moviePath=${encodeURIComponent(
+            moviePath
+          )}`;
+          break;
+        case "remux":
+          // TODO
+          break;
+        case "hls":
+          if (Hls.isSupported()) {
+            // const hls = new Hls();
+            // const hlsSource = `/api/movie/playHls/output.m3u8?moviePath=${encodeURIComponent(
+            //   moviePath
+            // )}`;
+            // hls.loadSource(hlsSource);
+            // hls.attachMedia(videoRef.current);
+          }
+          // TODO
+          break;
+      }
     }
-  }, [moviePath, videoRef]); // 依赖项为 moviePath 和 videoRef
+  }, [moviePath, videoRef, movieType]);
 
   const getSubtitleSrc = (track: SubtitleListsResponseType[number]) => {
     const params = new URLSearchParams({ moviePath });
@@ -51,10 +61,9 @@ export default function MoviePlayer({
   return (
     <div className="w-full mx-auto">
       <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
-        {/* <video
+        <video
           ref={videoRef}
           controls
-          src={`/api/movie/play/?moviePath=${encodeURIComponent(moviePath)}`}
           className="w-full h-full object-contain"
           onError={(e) => {
             toast.error(e.currentTarget.error?.message);
@@ -77,7 +86,7 @@ export default function MoviePlayer({
               />
             ))}
           Your browser does not support the video tag.
-        </video> */}
+        </video>
       </div>
 
       <MovieInfo moviePath={moviePath} />

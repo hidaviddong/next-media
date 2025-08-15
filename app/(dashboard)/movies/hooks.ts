@@ -15,6 +15,8 @@ export const KEYS = {
   MOVIE_INFO: ["movieInfo"],
   MOVIE_SUBTITLE_LISTS: ["movieSubtitleLists"],
   USER_LIBRARY: ["userLibrary"],
+  MOVIE_PLAY: ["moviePlay"],
+  MOVIE_REMX_PROGRESS: ["movieRemuxProgress"],
 };
 
 export function useQueueMovies() {
@@ -139,4 +141,17 @@ export function useUserLibrary() {
     },
   });
   return { userLibraryQuery };
+}
+
+export function useMovieRemuxProgress(jobId: string) {
+  const movieRemuxProgressQuery = useQuery({
+    queryKey: [KEYS.MOVIE_REMX_PROGRESS, jobId],
+    queryFn: async () => {
+      const response = await client.api.movie.remuxProgress.$get({
+        query: { jobId },
+      });
+      return response.json();
+    },
+  });
+  return { movieRemuxProgressQuery };
 }
