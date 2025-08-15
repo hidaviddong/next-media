@@ -12,7 +12,8 @@ import fs from "node:fs/promises";
 import { createReadStream, existsSync } from "node:fs";
 import { Readable } from "node:stream";
 import path from "node:path";
-import { getMovieInfo, remuxToMp4 } from "@/server/utils";
+import { getMovieInfo, remuxToMp4, SubtitleTrackInfo } from "@/server/utils";
+import { spawn } from "node:child_process";
 
 const queueSchema = z.object({
   movies: z.array(
@@ -31,6 +32,11 @@ const moviePathSchema = z.object({
 
 const playSchema = z.object({
   moviePath: z.string(),
+});
+
+const subtitleSchema = z.object({
+  moviePath: z.string(),
+  index: z.string(),
 });
 
 export const movieRoute = new Hono<{ Variables: Variables }>()
@@ -385,4 +391,100 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       }
     }
   )
-  .get("/subtitles", async (c) => {});
+  .get(
+    "/subtitleLists",
+    zValidator("query", playSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const { moviePath } = c.req.valid("query");
+      const availableSubtitles: SubtitleTrackInfo[] = [];
+      try {
+        const files = await fs.readdir(moviePath);
+        const videoFile = files.find((f) => f.endsWith(".mkv"));
+
+        if (!videoFile) {
+          throw new HTTPException(404, { message: "Video file not found" });
+        }
+        const videoFullPath = path.join(moviePath, videoFile);
+        const mediaInfo = await getMovieInfo(videoFullPath);
+        const embeddedStreams = mediaInfo.streams.filter(
+          (s) => s.codec_type === "subtitle"
+        );
+        // 1. 内封字幕
+        embeddedStreams.forEach((stream) => {
+          availableSubtitles.push({
+            type: "embedded",
+            index: stream.index,
+            lang: stream.tags?.language || "und",
+            title: stream.tags?.title || `未知字幕 (Stream #${stream.index})`,
+          });
+        });
+
+        // --- 2. 查找外部字幕文件 ---
+        const externalSrtFiles = files.filter(
+          (f) => f.endsWith(".srt") || f.endsWith(".ass")
+        );
+        externalSrtFiles.forEach((srtFile) => {
+          availableSubtitles.push({
+            type: "external",
+            path: path.join(moviePath, srtFile),
+            lang: srtFile.match(/\.(chi|eng|jpn)\./i)?.[1] || "und", // 简单的语言猜测
+            title: path.basename(srtFile),
+          });
+        });
+
+        return c.json(availableSubtitles);
+      } catch (e) {
+        throw new HTTPException(404, { message: "Server Error" });
+      }
+    }
+  )
+  .get(
+    "/subtitle",
+    zValidator("query", subtitleSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: result.error.message });
+      }
+    }),
+    async (c) => {
+      const { moviePath, index } = c.req.valid("query");
+
+      try {
+        const files = await fs.readdir(moviePath);
+        // 字幕要从 mkv 里面拿
+        const videoFile = files.find((f) => f.endsWith(".mkv"));
+
+        if (!videoFile) {
+          throw new HTTPException(404, { message: "Video file not found" });
+        }
+
+        const videoFullPath = path.join(moviePath, videoFile);
+
+        console.log(
+          `Extracting embedded subtitle #${index} from ${videoFullPath}`
+        );
+
+        const ffmpegArgs = [
+          "-i",
+          videoFullPath,
+          "-map",
+          `0:${index}`,
+          "-c:s",
+          "webvtt",
+          "-f",
+          "webvtt",
+          "pipe:1",
+        ];
+
+        const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
+        const webStream = Readable.toWeb(ffmpegProcess.stdout) as any;
+        c.header("Content-Type", "text/vtt; charset=UTF-8");
+        return c.body(webStream, 200);
+      } catch (e) {
+        throw new HTTPException(404, { message: "Server Error" });
+      }
+    }
+  );

@@ -13,6 +13,7 @@ export const KEYS = {
   QUEUE_STATUS: ["queueStatus"],
   MOVIE_PATH: ["moviePath"],
   MOVIE_INFO: ["movieInfo"],
+  MOVIE_SUBTITLE_LISTS: ["movieSubtitleLists"],
 };
 
 export function useQueueMovies() {
@@ -96,6 +97,7 @@ export function useMoviePath(tmdbId: string) {
       });
       return response.json();
     },
+    enabled: !!tmdbId,
   });
 
   return { moviePathQuery };
@@ -110,7 +112,22 @@ export function useMovieInfo(moviePath: string) {
       });
       return response.json();
     },
+    enabled: !!moviePath,
   });
 
   return { movieInfoQuery };
+}
+
+export function useMovieSubtitleLists(moviePath: string) {
+  const movieSubtitleListsQuery = useQuery({
+    queryKey: [KEYS.MOVIE_SUBTITLE_LISTS, moviePath],
+    queryFn: async () => {
+      const response = await client.api.movie.subtitleLists.$get({
+        query: { moviePath },
+      });
+      return response.json();
+    },
+    enabled: !!moviePath,
+  });
+  return { movieSubtitleListsQuery };
 }

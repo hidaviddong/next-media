@@ -35,6 +35,10 @@ export type ScanMoviesResponseType = InferResponseType<
   typeof client.api.scan.$post
 >;
 
+export type SubtitleListsResponseType = InferResponseType<
+  typeof client.api.movie.subtitleLists.$get
+>;
+
 // infer drizzle orm type
 //
 // db.
