@@ -20,3 +20,9 @@ export const formatBitrate = (bits: number = 0) => {
   const i = Math.floor(Math.log(bits) / Math.log(k));
   return parseFloat((bits / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 };
+
+export function getDirname(path: string) {
+  const lastSlashIndex = path.lastIndexOf("/");
+  if (lastSlashIndex === -1) return ".";
+  return path.substring(0, lastSlashIndex);
+}

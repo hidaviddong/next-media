@@ -3,10 +3,16 @@
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
 import { toast } from "sonner";
 import MovieInfo from "./movie-info";
-import { useMovieInfo, useMovieSubtitleLists } from "../hooks";
-import { useEffect, useRef } from "react";
+import {
+  useMovieInfo,
+  useMovieRemux,
+  useMovieSubtitleLists,
+  useMovieRemuxProgress,
+} from "../hooks";
+import { useEffect, useRef, useState } from "react";
 import { SubtitleListsResponseType } from "@/lib/types";
 import Hls from "hls.js";
+import { getDirname } from "@/lib/utils";
 
 export default function MoviePlayer({
   moviePath,
@@ -16,13 +22,15 @@ export default function MoviePlayer({
   posterPath: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [remuxJobId, setRemuxJobId] = useState("");
   const { movieInfoQuery } = useMovieInfo(moviePath);
   const movieType = movieInfoQuery.data?.type;
   const { movieSubtitleListsQuery } = useMovieSubtitleLists(moviePath);
   const { data: movieSubtitleLists } = movieSubtitleListsQuery;
-
+  const { movieRemuxMutation } = useMovieRemux();
+  const { movieRemuxProgressQuery } = useMovieRemuxProgress(remuxJobId);
+  const remuxProgress = movieRemuxProgressQuery.data?.progress;
   useEffect(() => {
-    // 确保只初始化一次 Hls
     if (videoRef.current && movieType) {
       switch (movieType) {
         case "direct":
@@ -31,7 +39,20 @@ export default function MoviePlayer({
           )}`;
           break;
         case "remux":
-          // TODO
+          movieRemuxMutation.mutate(
+            { moviePath },
+            {
+              onSuccess(data) {
+                if ("jobId" in data) {
+                  setRemuxJobId(data.jobId);
+                } else if ("cachedFilePath" in data) {
+                  videoRef.current!.src = `/api/movie/directPlay?moviePath=${encodeURIComponent(
+                    getDirname(data.cachedFilePath)
+                  )}`;
+                }
+              },
+            }
+          );
           break;
         case "hls":
           if (Hls.isSupported()) {
@@ -60,6 +81,7 @@ export default function MoviePlayer({
 
   return (
     <div className="w-full mx-auto">
+      <p>{remuxProgress}</p>
       <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
         <video
           ref={videoRef}

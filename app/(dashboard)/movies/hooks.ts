@@ -143,6 +143,18 @@ export function useUserLibrary() {
   return { userLibraryQuery };
 }
 
+export function useMovieRemux() {
+  const movieRemuxMutation = useMutation({
+    mutationFn: async (body: { moviePath: string }) => {
+      const response = await client.api.movie.remux.$post({
+        json: body,
+      });
+      return response.json();
+    },
+  });
+  return { movieRemuxMutation };
+}
+
 export function useMovieRemuxProgress(jobId: string) {
   const movieRemuxProgressQuery = useQuery({
     queryKey: [KEYS.MOVIE_REMX_PROGRESS, jobId],
@@ -152,6 +164,10 @@ export function useMovieRemuxProgress(jobId: string) {
       });
       return response.json();
     },
+    refetchInterval: (query) => {
+      return query.state.data?.progress === 100 ? false : 1000;
+    },
+    enabled: !!jobId,
   });
   return { movieRemuxProgressQuery };
 }

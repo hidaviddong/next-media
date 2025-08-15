@@ -244,25 +244,29 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       return c.json({ path: result[0].path });
     }
   )
-  .use(async (c, next) => {
-    const userId = c.get("user")?.id;
-    const moviePath = c.req.query("moviePath");
-    const userMovieAccess = await db
-      .select({
-        path: library_movies.path,
-      })
-      .from(library_movies)
-      .innerJoin(library, eq(library_movies.libraryId, library.id))
-      .where(
-        and(eq(library.userId, userId!), eq(library_movies.path, moviePath!))
-      );
-    if (userMovieAccess.length === 0) {
-      throw new HTTPException(403, {
-        message: "Access denied: Movie not found in user's library",
-      });
-    }
-    await next();
-  })
+  // .use(async (c, next) => {
+  //   const userId = c.get("user")?.id;
+  //   let moviePath = c.req.query("moviePath");
+  //   if (!moviePath) {
+  //     const body = await c.req.json();
+  //     moviePath = body.moviePath;
+  //   }
+  //   const userMovieAccess = await db
+  //     .select({
+  //       path: library_movies.path,
+  //     })
+  //     .from(library_movies)
+  //     .innerJoin(library, eq(library_movies.libraryId, library.id))
+  //     .where(
+  //       and(eq(library.userId, userId!), eq(library_movies.path, moviePath!))
+  //     );
+  //   if (userMovieAccess.length === 0) {
+  //     throw new HTTPException(403, {
+  //       message: "Access denied: Movie not found in user's library",
+  //     });
+  //   }
+  //   await next();
+  // })
   .get(
     "/directPlay",
     zValidator("query", directPlaySchema, (result, c) => {
