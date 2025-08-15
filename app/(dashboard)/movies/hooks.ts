@@ -14,6 +14,7 @@ export const KEYS = {
   MOVIE_PATH: ["moviePath"],
   MOVIE_INFO: ["movieInfo"],
   MOVIE_SUBTITLE_LISTS: ["movieSubtitleLists"],
+  USER_LIBRARY: ["userLibrary"],
 };
 
 export function useQueueMovies() {
@@ -127,4 +128,15 @@ export function useMovieSubtitleLists(moviePath: string) {
     },
   });
   return { movieSubtitleListsQuery };
+}
+
+export function useUserLibrary() {
+  const userLibraryQuery = useQuery({
+    queryKey: [KEYS.USER_LIBRARY],
+    queryFn: async () => {
+      const response = await client.api.user.library.$get();
+      return response.json();
+    },
+  });
+  return { userLibraryQuery };
 }

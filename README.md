@@ -12,3 +12,4 @@ Next media is a media management system (eg. Jellyfin, Emby, Plex) powered by Ne
     -[x] 读取mkv 多字幕 / 切换 
     -[ ] 读取文件夹下的单独字幕并转换成webvtt
     -[ ] web端上传自定义字幕
+- [x] Add folder 只出现一次，如果用户添加了，那就支持刷新
