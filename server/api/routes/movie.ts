@@ -12,7 +12,7 @@ import fs from "node:fs/promises";
 import { createReadStream, existsSync } from "node:fs";
 import { Readable } from "node:stream";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { getMovieInfo, remuxToMp4 } from "@/server/utils";
 
 const queueSchema = z.object({
   movies: z.array(
@@ -32,43 +32,6 @@ const moviePathSchema = z.object({
 const playSchema = z.object({
   moviePath: z.string(),
 });
-
-/**
- * 将一个视频文件重封装为 MP4，并返回一个在转换完成后解析的 Promise。
- * @param inputPath 输入文件的路径
- * @param outputPath 输出文件的路径
- */
-function remuxToMp4(inputPath: string, outputPath: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    console.log(`Starting remux from ${inputPath} to ${outputPath}`);
-
-    const ffmpegArgs = ["-i", inputPath, "-c", "copy", "-sn", outputPath];
-    const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
-
-    let errorOutput = "";
-    ffmpegProcess.stderr.on("data", (data) => {
-      errorOutput += data.toString();
-    });
-
-    ffmpegProcess.on("close", (code) => {
-      if (code === 0) {
-        console.log(`Successfully remuxed to ${outputPath}`);
-        resolve(); // 转换成功，Promise 完成
-      } else {
-        console.error(
-          `Failed to remux ${inputPath}. FFmpeg exited with code ${code}.`
-        );
-        console.error("FFmpeg error output:", errorOutput);
-        reject(new Error(`FFmpeg failed with code ${code}`)); // 转换失败，Promise 拒绝
-      }
-    });
-
-    ffmpegProcess.on("error", (err) => {
-      console.error("Failed to start FFmpeg process.", err);
-      reject(err);
-    });
-  });
-}
 
 export const movieRoute = new Hono<{ Variables: Variables }>()
   .use(async (c, next) => {
@@ -376,5 +339,50 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       }
     }
   )
-  .get("/movieInfo", async (c) => {})
+  .get(
+    "/movieInfo",
+    zValidator("query", playSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      // 使用ffprobe获取电影信息
+      const { moviePath } = c.req.valid("query");
+      try {
+        const files = await fs.readdir(moviePath);
+        const videoFile = files.find(
+          (f) => f.endsWith(".mp4") || f.endsWith(".mkv")
+        );
+
+        if (!videoFile) {
+          throw new HTTPException(404, {
+            message: "Video file not found in directory",
+          });
+        }
+
+        const originalPath = path.join(moviePath, videoFile);
+        let movieInfo;
+        let isTranscoded = false;
+        if (path.extname(originalPath) === ".mkv") {
+          const cacheId = Buffer.from(originalPath).toString("base64url");
+          const cachedFilePath = path.join(
+            moviePath,
+            ".cache",
+            "transcode",
+            `${cacheId}.mp4`
+          );
+          movieInfo = await getMovieInfo(cachedFilePath);
+          isTranscoded = true;
+        } else {
+          movieInfo = await getMovieInfo(originalPath);
+          isTranscoded = false;
+        }
+
+        return c.json({ movieInfo, isTranscoded });
+      } catch (e) {
+        throw new HTTPException(404, { message: "Server Error" });
+      }
+    }
+  )
   .get("/subtitles", async (c) => {});

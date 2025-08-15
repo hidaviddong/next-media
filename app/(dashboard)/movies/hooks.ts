@@ -12,6 +12,7 @@ export const KEYS = {
   MOVIE_LISTS: ["movieLists"],
   QUEUE_STATUS: ["queueStatus"],
   MOVIE_PATH: ["moviePath"],
+  MOVIE_INFO: ["movieInfo"],
 };
 
 export function useQueueMovies() {
@@ -98,4 +99,18 @@ export function useMoviePath(tmdbId: string) {
   });
 
   return { moviePathQuery };
+}
+
+export function useMovieInfo(moviePath: string) {
+  const movieInfoQuery = useQuery({
+    queryKey: [KEYS.MOVIE_INFO, moviePath],
+    queryFn: async () => {
+      const response = await client.api.movie.movieInfo.$get({
+        query: { moviePath },
+      });
+      return response.json();
+    },
+  });
+
+  return { movieInfoQuery };
 }

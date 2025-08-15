@@ -2,15 +2,15 @@
 
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
 import { toast } from "sonner";
+import MovieInfo from "./movie-info";
 
-interface MoviePlayerProps {
-  moviePath: string;
-  posterPath: string;
-}
 export default function MoviePlayer({
   moviePath,
   posterPath,
-}: MoviePlayerProps) {
+}: {
+  moviePath: string;
+  posterPath: string;
+}) {
   return (
     <div className="w-full mx-auto">
       <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
@@ -26,6 +26,7 @@ export default function MoviePlayer({
           Your browser does not support the video tag.
         </video>
       </div>
+      <MovieInfo moviePath={moviePath} />
     </div>
   );
 }
