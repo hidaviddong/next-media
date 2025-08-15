@@ -1,5 +1,7 @@
 import { spawn } from "node:child_process";
 
+const BROWSER_UNSUPPORTED_AUDIO_FORMATS = ["dts", "ac3", "eac3", "truehd"];
+
 export interface MovieInfo {
   streams: Record<string, any>[];
   format: Record<string, any>;
@@ -12,26 +14,39 @@ export interface SubtitleTrackInfo {
   path?: string; // 如果是外部文件，它的路径
 }
 
-export function remuxToMp4(inputPath: string, outputPath: string) {
+export async function remuxToMp4(
+  inputPath: string,
+  outputPath: string
+): Promise<void> {
+  const ffmpegArgs: string[] = [
+    "-i",
+    inputPath,
+    "-c",
+    "copy",
+    "-sn",
+    outputPath,
+  ];
+
+  // 执行 FFmpeg 进程
   return new Promise((resolve, reject) => {
-    const ffmpegArgs = ["-i", inputPath, "-c", "copy", "-sn", outputPath];
+    console.log("Executing FFmpeg with args:", ffmpegArgs.join(" "));
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
     let errorOutput = "";
     ffmpegProcess.stderr.on("data", (data) => {
+      console.log(`[FFMPEG-LOG]: ${data.toString()}`);
       errorOutput += data.toString();
     });
 
     ffmpegProcess.on("close", (code) => {
       if (code === 0) {
-        console.log(`Successfully remuxed to ${outputPath}`);
-        resolve("");
+        console.log(`Successfully processed ${inputPath} to ${outputPath}`);
+        resolve();
       } else {
-        console.error(
-          `Failed to remux ${inputPath}. FFmpeg exited with code ${code}.`
-        );
+        const errorMessage = `Failed to process ${inputPath}. FFmpeg exited with code ${code}.`;
+        console.error(errorMessage);
         console.error("FFmpeg error output:", errorOutput);
-        reject(new Error(`FFmpeg failed with code ${code}`)); // 转换失败，Promise 拒绝
+        reject(new Error(errorMessage));
       }
     });
 

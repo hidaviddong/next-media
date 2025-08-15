@@ -13,3 +13,6 @@ Next media is a media management system (eg. Jellyfin, Emby, Plex) powered by Ne
     -[ ] 读取文件夹下的单独字幕并转换成webvtt
     -[ ] web端上传自定义字幕
 - [x] Add folder 只出现一次，如果用户添加了，那就支持刷新
+- [x] 浏览器不支持 DTS 音频，需要转换 (转换后有时还是没声音)
+- [ ] 支持 m3u8 续传
+- [ ] 耗时转码任务放到 background

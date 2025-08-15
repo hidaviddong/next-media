@@ -281,6 +281,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           if (!existsSync(cachedFilePath)) {
             // --- 如果缓存不存在，则【等待】转换完成 ---
             try {
+              
               await remuxToMp4(originalPath, cachedFilePath);
               // 转换完成后，将播放路径指向缓存文件
               playablePath = cachedFilePath;
