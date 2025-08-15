@@ -97,7 +97,6 @@ export function useMoviePath(tmdbId: string) {
       });
       return response.json();
     },
-    enabled: !!tmdbId,
   });
 
   return { moviePathQuery };
@@ -112,7 +111,6 @@ export function useMovieInfo(moviePath: string) {
       });
       return response.json();
     },
-    enabled: !!moviePath,
   });
 
   return { movieInfoQuery };
@@ -127,7 +125,6 @@ export function useMovieSubtitleLists(moviePath: string) {
       });
       return response.json();
     },
-    enabled: !!moviePath,
   });
   return { movieSubtitleListsQuery };
 }
