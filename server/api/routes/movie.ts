@@ -25,12 +25,12 @@ const queueSchema = z.object({
   ),
 });
 
-const playSchema = z.object({
-  moviePath: z.string(),
-});
-
 const moviePathSchema = z.object({
   tmdbId: z.string(),
+});
+
+const playSchema = z.object({
+  moviePath: z.string(),
 });
 
 /**
@@ -71,12 +71,15 @@ function remuxToMp4(inputPath: string, outputPath: string): Promise<void> {
 }
 
 export const movieRoute = new Hono<{ Variables: Variables }>()
-  .get("/lists", async (c) => {
+  .use(async (c, next) => {
     const userId = c.get("user")?.id;
     if (!userId) {
       throw new HTTPException(401, { message: "Unauthorized" });
     }
-
+    await next();
+  })
+  .get("/lists", async (c) => {
+    const userId = c.get("user")?.id;
     const userMovies = await db
       .select({
         movie: movie,
@@ -99,10 +102,6 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
     }),
     async (c) => {
       const userId = c.get("user")?.id;
-      if (!userId) {
-        throw new HTTPException(401, { message: "Unauthorized" });
-      }
-
       const { movies: incomingMovies } = c.req.valid("json");
 
       if (incomingMovies.length === 0) {
@@ -112,13 +111,13 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       const libraryPath = incomingMovies[0].libraryPath;
 
       let lib = await db.query.library.findFirst({
-        where: and(eq(library.userId, userId), eq(library.path, libraryPath)),
+        where: and(eq(library.userId, userId!), eq(library.path, libraryPath)),
       });
 
       if (!lib) {
         const newLibraries = await db
           .insert(library)
-          .values({ id: nanoid(), userId, path: libraryPath })
+          .values({ id: nanoid(), userId: userId!, path: libraryPath })
           .returning();
         lib = newLibraries[0];
       }
@@ -159,9 +158,6 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   )
   .get("/queueStatus", async (c) => {
     const userId = c.get("user")?.id;
-    if (!userId) {
-      throw new HTTPException(401, { message: "Unauthorized" });
-    }
     const queueJobs = await tmdbApiRequestQueue.getJobs([
       "active",
       "waiting",
@@ -169,7 +165,9 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       "completed",
     ]);
 
-    const userQueueJobs = queueJobs.filter((job) => job.data.userId === userId);
+    const userQueueJobs = queueJobs.filter(
+      (job) => job.data.userId === userId!
+    );
 
     // 处理队列数据
     const queueStats = {
@@ -242,11 +240,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
     }),
     async (c) => {
       const userId = c.get("user")?.id;
-      if (!userId) {
-        throw new HTTPException(401, { message: "Unauthorized" });
-      }
       const { tmdbId } = c.req.query();
-
       const result = await db
         .select({
           path: library_movies.path,
@@ -255,7 +249,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         .innerJoin(library, eq(library_movies.libraryId, library.id))
         .innerJoin(movie, eq(library_movies.movieId, movie.id))
         .where(
-          and(eq(library.userId, userId), eq(movie.tmdbId, parseInt(tmdbId)))
+          and(eq(library.userId, userId!), eq(movie.tmdbId, parseInt(tmdbId)))
         );
 
       if (result.length === 0) {
@@ -264,6 +258,25 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       return c.json({ path: result[0].path });
     }
   )
+  .use(async (c, next) => {
+    const userId = c.get("user")?.id;
+    const moviePath = c.req.query("moviePath");
+    const userMovieAccess = await db
+      .select({
+        path: library_movies.path,
+      })
+      .from(library_movies)
+      .innerJoin(library, eq(library_movies.libraryId, library.id))
+      .where(
+        and(eq(library.userId, userId!), eq(library_movies.path, moviePath!))
+      );
+    if (userMovieAccess.length === 0) {
+      throw new HTTPException(403, {
+        message: "Access denied: Movie not found in user's library",
+      });
+    }
+    await next();
+  })
   .get(
     "/play",
     zValidator("query", playSchema, (result, c) => {
@@ -272,27 +285,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       }
     }),
     async (c) => {
-      const userId = c.get("user")?.id;
-      if (!userId) {
-        throw new HTTPException(401, { message: "Unauthorized" });
-      }
       const { moviePath } = c.req.valid("query");
-      const userMovieAccess = await db
-        .select({
-          path: library_movies.path,
-        })
-        .from(library_movies)
-        .innerJoin(library, eq(library_movies.libraryId, library.id))
-        .where(
-          and(eq(library.userId, userId), eq(library_movies.path, moviePath))
-        );
-
-      if (userMovieAccess.length === 0) {
-        throw new HTTPException(403, {
-          message: "Access denied: Movie not found in user's library",
-        });
-      }
-
       try {
         // 优先拿mp4
         const files = await fs.readdir(moviePath);
@@ -382,4 +375,6 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         throw new HTTPException(404, { message: "Server Error" });
       }
     }
-  );
+  )
+  .get("/movieInfo", async (c) => {})
+  .get("/subtitles", async (c) => {});
