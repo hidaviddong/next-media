@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { SubtitleListsResponseType } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -21,8 +22,21 @@ export const formatBitrate = (bits: number = 0) => {
   return parseFloat((bits / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 };
 
-export function getDirname(path: string) {
+export const getDirname = (path: string) => {
   const lastSlashIndex = path.lastIndexOf("/");
   if (lastSlashIndex === -1) return ".";
   return path.substring(0, lastSlashIndex);
-}
+};
+
+export const getSubtitleSrc = (
+  moviePath: string,
+  track: SubtitleListsResponseType[number]
+) => {
+  const params = new URLSearchParams({ moviePath });
+  if (track.type === "embedded") {
+    params.set("index", track.index!.toString());
+  } else {
+    params.set("externalPath", track.path!);
+  }
+  return `/api/movie/subtitle?${params.toString()}`;
+};

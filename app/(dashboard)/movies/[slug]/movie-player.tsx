@@ -9,10 +9,10 @@ import {
   useMovieSubtitleLists,
   useMovieRemuxProgress,
 } from "../hooks";
-import { useEffect, useRef, useState } from "react";
-import { SubtitleListsResponseType } from "@/lib/types";
+import { useEffect, useRef } from "react";
 import Hls from "hls.js";
-import { getDirname } from "@/lib/utils";
+import { getDirname, getSubtitleSrc } from "@/lib/utils";
+import { MovieProgress } from "./movie-progress";
 
 export default function MoviePlayer({
   moviePath,
@@ -22,14 +22,23 @@ export default function MoviePlayer({
   posterPath: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [remuxJobId, setRemuxJobId] = useState("");
+
+  // movie info
   const { movieInfoQuery } = useMovieInfo(moviePath);
   const movieType = movieInfoQuery.data?.type;
+  // subtitls
   const { movieSubtitleListsQuery } = useMovieSubtitleLists(moviePath);
-  const { data: movieSubtitleLists } = movieSubtitleListsQuery;
-  const { movieRemuxMutation } = useMovieRemux();
-  const { movieRemuxProgressQuery } = useMovieRemuxProgress(remuxJobId);
+  const movieSubtitleLists = movieSubtitleListsQuery.data;
+  // remux
+  const { movieRemuxQuery } = useMovieRemux(moviePath, movieType);
+  const remuxJobId = movieRemuxQuery.data?.jobId;
+  const { movieRemuxProgressQuery } = useMovieRemuxProgress(
+    remuxJobId,
+    moviePath
+  );
   const remuxProgress = movieRemuxProgressQuery.data?.progress;
+  const outputPath = movieRemuxQuery.data?.outputPath;
+
   useEffect(() => {
     if (videoRef.current && movieType) {
       switch (movieType) {
@@ -39,20 +48,11 @@ export default function MoviePlayer({
           )}`;
           break;
         case "remux":
-          movieRemuxMutation.mutate(
-            { moviePath },
-            {
-              onSuccess(data) {
-                if ("jobId" in data) {
-                  setRemuxJobId(data.jobId);
-                } else if ("cachedFilePath" in data) {
-                  videoRef.current!.src = `/api/movie/directPlay?moviePath=${encodeURIComponent(
-                    getDirname(data.cachedFilePath)
-                  )}`;
-                }
-              },
-            }
-          );
+          if (remuxProgress === 100) {
+            videoRef.current.src = `/api/movie/directPlay?moviePath=${encodeURIComponent(
+              getDirname(outputPath)
+            )}`;
+          }
           break;
         case "hls":
           if (Hls.isSupported()) {
@@ -67,21 +67,19 @@ export default function MoviePlayer({
           break;
       }
     }
-  }, [moviePath, videoRef, movieType]);
+  }, [moviePath, videoRef, movieType, remuxProgress, outputPath]);
 
-  const getSubtitleSrc = (track: SubtitleListsResponseType[number]) => {
-    const params = new URLSearchParams({ moviePath });
-    if (track.type === "embedded") {
-      params.set("index", track.index!.toString());
-    } else {
-      params.set("externalPath", track.path!);
-    }
-    return `/api/movie/subtitle?${params.toString()}`;
-  };
+  if (remuxProgress < 100) {
+    return (
+      <MovieProgress
+        progress={remuxProgress}
+        poster={`${TMDB_IMAGE_BASE_URL}${posterPath}`}
+      />
+    );
+  }
 
   return (
     <div className="w-full mx-auto">
-      <p>{remuxProgress}</p>
       <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
         <video
           ref={videoRef}
@@ -100,7 +98,7 @@ export default function MoviePlayer({
                     ? `embed-${track.index}`
                     : `ext-${track.path}`
                 }
-                src={getSubtitleSrc(track)}
+                src={getSubtitleSrc(moviePath, track)}
                 kind="subtitles"
                 srcLang={track.lang || "und"}
                 label={track.title || `Subtitle ${i + 1}`}

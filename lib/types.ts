@@ -1,4 +1,3 @@
-import { db } from "@/server/drizzle";
 import client from "./hono";
 import type { InferRequestType, InferResponseType } from "hono/client";
 import { movie } from "@/server/drizzle/schema";
@@ -38,6 +37,12 @@ export type ScanMoviesResponseType = InferResponseType<
 export type SubtitleListsResponseType = InferResponseType<
   typeof client.api.movie.subtitleLists.$get
 >;
+
+export type MovieInfoResponseType = InferResponseType<
+  typeof client.api.movie.movieInfo.$get
+>;
+
+export type MovieType = MovieInfoResponseType["type"];
 
 // infer drizzle orm type
 //

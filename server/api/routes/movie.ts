@@ -14,6 +14,7 @@ import { Readable } from "node:stream";
 import path from "node:path";
 import { getMovieInfo, SubtitleTrackInfo, waitForFile } from "@/server/utils";
 import { spawn } from "node:child_process";
+import consola from "consola";
 
 type MovieType = "direct" | "remux" | "hls";
 
@@ -41,9 +42,7 @@ const directPlaySchema = z.object({
   moviePath: z.string(),
 });
 
-const remuxSchema = z.object({
-  moviePath: z.string(),
-});
+const remuxSchema = directPlaySchema.clone();
 const movieInfoSchema = directPlaySchema.clone();
 const subtitleListsSchema = directPlaySchema.clone();
 
@@ -54,6 +53,7 @@ const subtitleSchema = z.object({
 
 const remuxStatusSchema = z.object({
   jobId: z.string(),
+  moviePath: z.string(),
 });
 
 export const movieRoute = new Hono<{ Variables: Variables }>()
@@ -244,29 +244,34 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       return c.json({ path: result[0].path });
     }
   )
-  // .use(async (c, next) => {
-  //   const userId = c.get("user")?.id;
-  //   let moviePath = c.req.query("moviePath");
-  //   if (!moviePath) {
-  //     const body = await c.req.json();
-  //     moviePath = body.moviePath;
-  //   }
-  //   const userMovieAccess = await db
-  //     .select({
-  //       path: library_movies.path,
-  //     })
-  //     .from(library_movies)
-  //     .innerJoin(library, eq(library_movies.libraryId, library.id))
-  //     .where(
-  //       and(eq(library.userId, userId!), eq(library_movies.path, moviePath!))
-  //     );
-  //   if (userMovieAccess.length === 0) {
-  //     throw new HTTPException(403, {
-  //       message: "Access denied: Movie not found in user's library",
-  //     });
-  //   }
-  //   await next();
-  // })
+  .use(async (c, next) => {
+    const userId = c.get("user")?.id;
+    let moviePath = c.req.query("moviePath");
+    // 检查路径的最后一部分是否是 'remux'
+    // 并且它的父目录是否是 '.cache'
+    if (
+      path.basename(moviePath!) === "remux" &&
+      path.basename(path.dirname(moviePath!)) === ".cache"
+    ) {
+      // 如果是，就取父目录的父目录，即向上跳两级
+      moviePath = path.dirname(path.dirname(moviePath!));
+    }
+    const userMovieAccess = await db
+      .select({
+        path: library_movies.path,
+      })
+      .from(library_movies)
+      .innerJoin(library, eq(library_movies.libraryId, library.id))
+      .where(
+        and(eq(library.userId, userId!), eq(library_movies.path, moviePath!))
+      );
+    if (userMovieAccess.length === 0) {
+      throw new HTTPException(403, {
+        message: "Access denied: Movie not found in user's library",
+      });
+    }
+    await next();
+  })
   .get(
     "/directPlay",
     zValidator("query", directPlaySchema, (result, c) => {
@@ -310,7 +315,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         const webStream = Readable.toWeb(nodeStream) as any;
 
         signal.onabort = () => {
-          console.log(
+          consola.success(
             `Client disconnected from MP4 stream. Destroying file stream for: ${moviePath}`
           );
           nodeStream.destroy();
@@ -324,74 +329,84 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         };
         return c.body(webStream, 206, headers);
       } catch (e) {
-        console.log(e);
+        consola.error(e);
         throw new HTTPException(404, { message: "Server Error" });
       }
     }
   )
-  .post(
+  .get(
     "/remux",
-    zValidator("json", remuxSchema, (result, c) => {
+    zValidator("query", remuxSchema, (result, c) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
     }),
     async (c) => {
-      const { moviePath } = c.req.valid("json");
+      const { moviePath } = c.req.valid("query");
       const files = await fs.readdir(moviePath);
       const videoFile = files.find((f) => f.endsWith(".mkv"));
       if (!videoFile) {
         throw new HTTPException(404, { message: "Video file not found" });
       }
-      const CACHE_DIR = path.join(moviePath, ".cache", "transcode");
+
+      const CACHE_DIR = path.join(moviePath, ".cache", "remux");
       fs.mkdir(CACHE_DIR, { recursive: true });
       const originalPath = path.join(moviePath, videoFile);
       const cacheId = Buffer.from(originalPath).toString("base64url");
       const cachedFilePath = path.join(CACHE_DIR, `${cacheId}.mp4`);
-      if (existsSync(cachedFilePath)) {
-        return c.json({
-          status: "READY",
-          message: "Video is ready to play.",
-          cachedFilePath: cachedFilePath,
-        });
-      } else {
-        const jobId = `remux:${cacheId}`;
-        const existingJob = await remuxToMp4Queue.getJob(jobId);
-        if (
-          existingJob &&
-          !(await existingJob.isCompleted()) &&
-          !(await existingJob.isFailed())
-        ) {
-          console.log(`Job ${jobId} is already in the queue or active.`);
-          return c.json(
-            {
-              status: "PROCESSING",
-              message: "Video is being prepared. Please check back shortly.",
-              jobId: jobId,
-            },
-            202
-          );
-        } else {
-          console.log(`Adding job ${jobId} to remux-to-mp4queue`);
-          await remuxToMp4Queue.add(
-            "remux-to-mp4",
-            {
-              inputPath: originalPath,
-              outputPath: cachedFilePath,
-            },
-            { jobId }
-          );
 
-          return c.json(
-            {
-              status: "QUEUED",
-              message: "Video processing has started.",
-              jobId: jobId,
-            },
-            202
-          );
-        }
+      const completedJobs = await remuxToMp4Queue.getJobs(["completed"]);
+      const completedJob = completedJobs.find(
+        (job) => job?.data?.inputPath === originalPath
+      );
+
+      const activeJobs = await remuxToMp4Queue.getJobs(["active", "waiting"]);
+      const existingJob = activeJobs.find(
+        (job) => job?.data?.inputPath === originalPath
+      );
+
+      if (completedJob) {
+        consola.success(
+          `[Backend] 转码已经完成: ${originalPath}, Job ID: ${completedJob.id}`
+        );
+        return c.json({
+          status: "COMPLETED",
+          message: "Video processing has completed.",
+          jobId: completedJob.id,
+          outputPath: completedJob.data.outputPath,
+        });
       }
+
+      if (existingJob) {
+        consola.success(
+          `[Backend] 转码进行中: ${originalPath}, Job ID: ${existingJob.id}`
+        );
+        return c.json({
+          status: "PROCESSING",
+          message: "Video is being processed. Please check back shortly.",
+          jobId: existingJob.id,
+          outputPath: existingJob.data.outputPath,
+        });
+      }
+
+      await remuxToMp4Queue.add(
+        "remux-to-mp4",
+        {
+          inputPath: originalPath,
+          outputPath: cachedFilePath,
+        },
+        { jobId: cacheId }
+      );
+
+      consola.success(
+        `[Backend] 添加新任务: ${originalPath}, Job ID: ${cacheId}`
+      );
+      return c.json({
+        status: "QUEUED",
+        message: "Video processing has started.",
+        jobId: cacheId,
+        outputPath: cachedFilePath,
+      });
     }
   )
   .get(
@@ -407,7 +422,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       if (!job) {
         throw new HTTPException(404, { message: "Job not found" });
       }
-      const progress = await job.getProgress();
+      const progress = await job.progress;
       return c.json({ progress });
     }
   )
@@ -471,22 +486,21 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
             ];
 
             const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
-            // (你的 ffmpeg 日志和事件处理逻辑保持不变)
             ffmpegProcess.stderr.on("data", (data) =>
-              console.log(`[FFMPEG-HLS]: ${data.toString()}`)
+              consola.success(`[FFMPEG-HLS]: ${data.toString()}`)
             );
             ffmpegProcess.on("error", (error) => {
-              console.error(`[FFMPEG-HLS-ERROR]: ${error.message}`);
+              consola.error(`[FFMPEG-HLS-ERROR]: ${error.message}`);
               fs.unlink(lockFilePath).catch(() => {});
             });
             ffmpegProcess.on("close", () => {
-              console.log(
+              consola.success(
                 `[FFMPEG-HLS-CLOSE]: Transcoding finished for ${moviePath}`
               );
               fs.unlink(lockFilePath).catch(() => {});
             });
             c.req.raw.signal.onabort = () => {
-              console.log("Client disconnected, killing FFmpeg process.");
+              consola.success("Client disconnected, killing FFmpeg process.");
               ffmpegProcess.kill();
             };
           }
@@ -534,7 +548,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           throw new HTTPException(400, { message: "Invalid HLS request." });
         }
       } catch (e: any) {
-        console.error("playHls error", e);
+        consola.error("playHls error", e);
         if (e instanceof HTTPException) throw e;
         throw new HTTPException(500, { message: "Server Error" });
       }
@@ -584,7 +598,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           movieInfo,
         });
       } catch (e) {
-        console.log(e);
+        consola.error(e);
         throw new HTTPException(404, { message: "Server Error" });
       }
     }
@@ -661,7 +675,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
 
         const videoFullPath = path.join(moviePath, videoFile);
 
-        console.log(
+        consola.success(
           `Extracting embedded subtitle #${index} from ${videoFullPath}`
         );
 

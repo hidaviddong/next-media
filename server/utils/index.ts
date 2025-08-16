@@ -1,5 +1,8 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
+import type { Job } from "bullmq";
+import { RemuxToMp4Job } from "@/lib/types";
+import consola from "consola";
 
 export interface MovieInfo {
   streams: Record<string, any>[];
@@ -21,11 +24,24 @@ function parseTimeToSeconds(timeString: string) {
   return hours * 3600 + minutes * 60 + seconds;
 }
 
-export async function remuxToMp4(
-  inputPath: string,
-  outputPath: string,
-  onProgress: (progress: number) => void
-): Promise<void> {
+export const remuxToMp4_mock = async (job: Job<RemuxToMp4Job>) => {
+  const { inputPath, outputPath } = job.data;
+  consola.info(`[Worker] 开始转码: ${inputPath}`);
+
+  for (let i = 0; i <= 100; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    await job.updateProgress(i);
+    consola.info(`[Worker] 进度: ${inputPath} - ${i}%`);
+  }
+
+  consola.info(`[Worker] 转码完成: ${inputPath}`);
+  return { outputPath, status: "Completed" };
+};
+
+export const remuxToMp4 = async (job: Job<RemuxToMp4Job>) => {
+  const { inputPath, outputPath } = job.data;
+  consola.info(`[Worker] 开始转码: ${inputPath}`);
+
   const movieInfo = await getMovieInfo(inputPath);
   const totalDurationString = movieInfo.format.duration;
   const totalDurationInSeconds = parseFloat(totalDurationString);
@@ -41,14 +57,12 @@ export async function remuxToMp4(
 
   // 执行 FFmpeg 进程
   return new Promise((resolve, reject) => {
-    console.log("Executing FFmpeg with args:", ffmpegArgs.join(" "));
+    consola.info("Executing FFmpeg with args:", ffmpegArgs.join(" "));
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
-
     let errorOutput = "";
-    ffmpegProcess.stderr.on("data", (data) => {
+    ffmpegProcess.stderr.on("data", async (data) => {
       const logLine = data.toString();
-      errorOutput += logLine; // 累积错误日志以备调试
-
+      errorOutput += logLine;
       // 使用正则表达式匹配 'time=' 字段
       const timeMatch = logLine.match(/time=(\d{2}:\d{2}:\d{2}\.\d{2})/);
 
@@ -62,29 +76,29 @@ export async function remuxToMp4(
             (currentTimeInSeconds / totalDurationInSeconds) * 100
           );
           // 调用回调函数，并确保进度不超过 100
-          onProgress(Math.min(100, progress));
+          await job.updateProgress(Math.min(100, progress));
         }
       }
     });
 
-    ffmpegProcess.on("close", (code) => {
+    ffmpegProcess.on("close", async (code) => {
       if (code === 0) {
-        onProgress(100);
-        resolve();
+        await job.updateProgress(100);
+        resolve("");
       } else {
         const errorMessage = `Failed to process ${inputPath}. FFmpeg exited with code ${code}.`;
-        console.error(errorMessage);
-        console.error("FFmpeg error output:", errorOutput);
+        consola.error(errorMessage);
+        consola.error("FFmpeg error output:", errorOutput);
         reject(new Error(errorMessage));
       }
     });
 
     ffmpegProcess.on("error", (err) => {
-      console.error("Failed to start FFmpeg process.", err);
+      consola.error("Failed to start FFmpeg process.", err);
       reject(err);
     });
   });
-}
+};
 
 export function getMovieInfo(moviePath: string): Promise<MovieInfo> {
   return new Promise((resolve, reject) => {
@@ -111,7 +125,7 @@ export function getMovieInfo(moviePath: string): Promise<MovieInfo> {
     });
 
     ffprobe.on("error", (err) => {
-      console.error("Failed to start ffprobe process.", err);
+      consola.error("Failed to start ffprobe process.", err);
       reject(err);
     });
 

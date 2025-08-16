@@ -3,6 +3,7 @@ import {
   type ScanMoviesRequestType,
   type ScanMoviesResponseType,
   type QueueMoviesRequestType,
+  MovieType,
 } from "@/lib/types";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -16,7 +17,8 @@ export const KEYS = {
   MOVIE_SUBTITLE_LISTS: ["movieSubtitleLists"],
   USER_LIBRARY: ["userLibrary"],
   MOVIE_PLAY: ["moviePlay"],
-  MOVIE_REMX_PROGRESS: ["movieRemuxProgress"],
+  MOVIE_REMUX: ["movieRemux"],
+  MOVIE_REMUX_PROGRESS: ["movieRemuxProgress"],
 };
 
 export function useQueueMovies() {
@@ -61,22 +63,20 @@ export function useScanMovies() {
 }
 
 export function useMovieLists() {
-  const key = KEYS.MOVIE_LISTS;
   const movieListsQuery = useQuery({
-    queryKey: key,
+    queryKey: [...KEYS.MOVIE_LISTS],
     queryFn: async () => {
       const response = await client.api.movie.lists.$get();
       return response.json();
     },
   });
-  return { movieListsQuery, key };
+  return { movieListsQuery };
 }
 
 export function useQueueStatus() {
-  const key = KEYS.QUEUE_STATUS;
   const queryClient = useQueryClient();
   const queueStatusQuery = useQuery({
-    queryKey: key,
+    queryKey: [...KEYS.QUEUE_STATUS],
     queryFn: async () => {
       const response = await client.api.movie.queueStatus.$get();
       return response.json();
@@ -87,13 +87,13 @@ export function useQueueStatus() {
   });
 
   if (queueStatusQuery.data?.stats.active === 0) {
-    queryClient.invalidateQueries({ queryKey: KEYS.MOVIE_LISTS });
+    queryClient.invalidateQueries({ queryKey: [...KEYS.QUEUE_STATUS] });
   }
-  return { queueStatusQuery, key };
+  return { queueStatusQuery };
 }
 export function useMoviePath(tmdbId: string) {
   const moviePathQuery = useQuery({
-    queryKey: [KEYS.MOVIE_PATH, tmdbId],
+    queryKey: [...KEYS.MOVIE_PATH, tmdbId],
     queryFn: async () => {
       const response = await client.api.movie.moviePath.$get({
         query: { tmdbId },
@@ -107,7 +107,7 @@ export function useMoviePath(tmdbId: string) {
 
 export function useMovieInfo(moviePath: string) {
   const movieInfoQuery = useQuery({
-    queryKey: [KEYS.MOVIE_INFO, moviePath],
+    queryKey: [...KEYS.MOVIE_INFO, moviePath],
     queryFn: async () => {
       const response = await client.api.movie.movieInfo.$get({
         query: { moviePath },
@@ -121,7 +121,7 @@ export function useMovieInfo(moviePath: string) {
 
 export function useMovieSubtitleLists(moviePath: string) {
   const movieSubtitleListsQuery = useQuery({
-    queryKey: [KEYS.MOVIE_SUBTITLE_LISTS, moviePath],
+    queryKey: [...KEYS.MOVIE_SUBTITLE_LISTS, moviePath],
     queryFn: async () => {
       const response = await client.api.movie.subtitleLists.$get({
         query: { moviePath },
@@ -134,7 +134,7 @@ export function useMovieSubtitleLists(moviePath: string) {
 
 export function useUserLibrary() {
   const userLibraryQuery = useQuery({
-    queryKey: [KEYS.USER_LIBRARY],
+    queryKey: [...KEYS.USER_LIBRARY],
     queryFn: async () => {
       const response = await client.api.user.library.$get();
       return response.json();
@@ -143,24 +143,26 @@ export function useUserLibrary() {
   return { userLibraryQuery };
 }
 
-export function useMovieRemux() {
-  const movieRemuxMutation = useMutation({
-    mutationFn: async (body: { moviePath: string }) => {
-      const response = await client.api.movie.remux.$post({
-        json: body,
+export function useMovieRemux(moviePath: string, movieType?: MovieType) {
+  const movieRemuxQuery = useQuery({
+    queryKey: [...KEYS.MOVIE_REMUX, moviePath],
+    queryFn: async () => {
+      const response = await client.api.movie.remux.$get({
+        query: { moviePath },
       });
       return response.json();
     },
+    enabled: movieType === "remux",
   });
-  return { movieRemuxMutation };
+  return { movieRemuxQuery };
 }
 
-export function useMovieRemuxProgress(jobId: string) {
+export function useMovieRemuxProgress(jobId: string, moviePath: string) {
   const movieRemuxProgressQuery = useQuery({
-    queryKey: [KEYS.MOVIE_REMX_PROGRESS, jobId],
+    queryKey: [...KEYS.MOVIE_REMUX_PROGRESS, jobId],
     queryFn: async () => {
       const response = await client.api.movie.remuxProgress.$get({
-        query: { jobId },
+        query: { jobId, moviePath },
       });
       return response.json();
     },

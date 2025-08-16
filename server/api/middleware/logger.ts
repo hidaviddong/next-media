@@ -1,4 +1,4 @@
-import pc from "picocolors";
+import { consola } from "consola";
 export const customLogger = (message: string, ...rest: string[]) => {
-  console.log(pc.bgGreenBright("Hono Logger: " + message + rest.join(" ")));
+  consola.success("Hono Logger: " + message + rest.join(" "));
 };
