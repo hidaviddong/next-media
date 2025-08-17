@@ -14,9 +14,11 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useSetAtom } from "jotai";
 import { hasPlayButtonClickAtom } from "@/lib/store";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function AppHeader() {
   const setHasPlayButtonClick = useSetAtom(hasPlayButtonClickAtom);
+  const queryClient = useQueryClient();
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const user = session?.user;
@@ -76,6 +78,7 @@ export default function AppHeader() {
               <DropdownMenuItem
                 onClick={async () => {
                   await authClient.signOut();
+                  queryClient.invalidateQueries();
                   router.push("/auth");
                 }}
               >
