@@ -15,7 +15,7 @@ export default function AddFolder() {
 
   return (
     <div className="w-full flex justify-end">
-      {userLibraryQuery.data ? (
+      {userLibraryQuery.data?.userLibrary ? (
         <>
           <Button
             disabled={scanMovies.isPending || queueMovies.isPending}
