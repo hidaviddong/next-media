@@ -1,6 +1,6 @@
 import { db } from "@/server/drizzle";
 import { HTTPException } from "hono/http-exception";
-import { remuxToMp4Queue, tmdbApiRequestQueue } from "@/server/redis";
+import { hlsQueue, remuxToMp4Queue, tmdbApiRequestQueue } from "@/server/redis";
 import { movie, library, library_movies } from "@/server/drizzle/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
@@ -9,10 +9,10 @@ import z from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { nanoid } from "nanoid";
 import fs from "node:fs/promises";
-import { createReadStream, existsSync } from "node:fs";
+import { createReadStream } from "node:fs";
 import { Readable } from "node:stream";
 import path from "node:path";
-import { getMovieInfo, SubtitleTrackInfo, waitForFile } from "@/server/utils";
+import { getMovieInfo, SubtitleTrackInfo } from "@/server/utils";
 import { spawn } from "node:child_process";
 import consola from "consola";
 
@@ -33,11 +33,6 @@ const moviePathSchema = z.object({
   tmdbId: z.string(),
 });
 
-const playSchema = z.object({
-  moviePath: z.string(),
-  type: z.enum(["direct", "remux", "hls"]),
-});
-
 const directPlaySchema = z.object({
   moviePath: z.string(),
 });
@@ -45,6 +40,10 @@ const directPlaySchema = z.object({
 const remuxSchema = directPlaySchema.clone();
 const movieInfoSchema = directPlaySchema.clone();
 const subtitleListsSchema = directPlaySchema.clone();
+const hlsPlaySchema = z.object({
+  moviePath: z.string(),
+  filename: z.string(),
+});
 
 const subtitleSchema = z.object({
   moviePath: z.string(),
@@ -247,10 +246,11 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   .use(async (c, next) => {
     const userId = c.get("user")?.id;
     let moviePath = c.req.query("moviePath");
-    // 检查路径的最后一部分是否是 'remux'
+    // 检查路径的最后一部分是否是 'remux' 或者 'hls'
     // 并且它的父目录是否是 '.cache'
     if (
-      path.basename(moviePath!) === "remux" &&
+      (path.basename(moviePath!) === "remux" ||
+        path.basename(moviePath!) === "hls") &&
       path.basename(path.dirname(moviePath!)) === ".cache"
     ) {
       // 如果是，就取父目录的父目录，即向上跳两级
@@ -331,6 +331,58 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       } catch (e) {
         consola.error(e);
         throw new HTTPException(404, { message: "Server Error" });
+      }
+    }
+  )
+  .get(
+    "/hlsPlay",
+    zValidator("query", hlsPlaySchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const { moviePath, filename } = c.req.valid("query");
+
+      if (filename.endsWith(".m3u8")) {
+        // 如果是 m3u8 文件, 读取、修改、然后发送
+        const filePath = path.join(moviePath, filename);
+        try {
+          const m3u8Content = await fs.readFile(filePath, "utf-8");
+
+          // 将每一行 .ts 替换为完整的 API URL
+          const modifiedContent = m3u8Content
+            .split("\n")
+            .map((line) => {
+              if (line.trim().endsWith(".ts")) {
+                const encodedPath = encodeURIComponent(moviePath);
+                return `/api/movie/hlsPlay?filename=${line.trim()}&moviePath=${encodedPath}`;
+              }
+              return line;
+            })
+            .join("\n");
+
+          c.header("Content-Type", "application/vnd.apple.mpegurl");
+          return c.body(modifiedContent, 200);
+        } catch (error) {
+          consola.error("Error reading m3u8 file:", error);
+          throw new HTTPException(404, { message: "M3U8 file not found" });
+        }
+      } else if (filename.endsWith(".ts")) {
+        // 如果是 .ts 文件，直接返回文件内容
+        const filePath = path.join(moviePath, filename);
+        try {
+          await fs.access(filePath);
+          const nodeStream = createReadStream(filePath);
+          const webStream = Readable.toWeb(nodeStream) as any;
+          c.header("Content-Type", "video/mp2t");
+          return c.body(webStream, 200);
+        } catch (error) {
+          consola.error("Error reading ts file:", error);
+          throw new HTTPException(404, { message: "TS segment not found" });
+        }
+      } else {
+        throw new HTTPException(400, { message: "Unsupported file type" });
       }
     }
   )
@@ -427,131 +479,94 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
     }
   )
   .get(
-    "/playHls/*",
-    zValidator("query", playSchema, (result, c) => {
+    "/hls",
+    zValidator("query", remuxSchema, (result, c) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
     }),
     async (c) => {
-      try {
-        const { moviePath } = c.req.valid("query");
-        const HLS_CACHE_DIR = path.join(moviePath, ".cache", "hls");
-        await fs.mkdir(HLS_CACHE_DIR, { recursive: true });
-
-        const requestedFile = path.basename(c.req.path);
-        const requestedFilePath = path.join(HLS_CACHE_DIR, requestedFile);
-        const lockFilePath = path.join(HLS_CACHE_DIR, "transcoding.lock");
-
-        // === .m3u8 请求处理逻辑 ===
-        if (requestedFile.endsWith(".m3u8")) {
-          // 只有在转码未开始时才启动 ffmpeg
-          if (!existsSync(lockFilePath)) {
-            if (existsSync(HLS_CACHE_DIR)) {
-              await fs.rm(HLS_CACHE_DIR, { recursive: true, force: true });
-              await fs.mkdir(HLS_CACHE_DIR, { recursive: true });
-            }
-            await fs.writeFile(lockFilePath, "locked");
-
-            const files = await fs.readdir(moviePath);
-            const videoFile = files.find(
-              (f) => f.endsWith(".mp4") || f.endsWith(".mkv")
-            );
-            if (!videoFile)
-              throw new HTTPException(404, { message: "Video not found" });
-
-            const videoFullPath = path.join(moviePath, videoFile);
-            const m3u8AbsolutePath = path.join(HLS_CACHE_DIR, "output.m3u8");
-
-            const ffmpegArgs = [
-              "-y",
-              "-i",
-              videoFullPath,
-              "-c:v",
-              "copy",
-              "-c:a",
-              "aac",
-              "-b:a",
-              "192k",
-              "-sn",
-              "-f",
-              "hls",
-              "-hls_time",
-              "4",
-              "-hls_list_size",
-              "0",
-              "-hls_segment_filename",
-              path.join(HLS_CACHE_DIR, "segment%03d.ts"),
-              m3u8AbsolutePath,
-            ];
-
-            const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
-            ffmpegProcess.stderr.on("data", (data) =>
-              consola.success(`[FFMPEG-HLS]: ${data.toString()}`)
-            );
-            ffmpegProcess.on("error", (error) => {
-              consola.error(`[FFMPEG-HLS-ERROR]: ${error.message}`);
-              fs.unlink(lockFilePath).catch(() => {});
-            });
-            ffmpegProcess.on("close", () => {
-              consola.success(
-                `[FFMPEG-HLS-CLOSE]: Transcoding finished for ${moviePath}`
-              );
-              fs.unlink(lockFilePath).catch(() => {});
-            });
-            c.req.raw.signal.onabort = () => {
-              consola.success("Client disconnected, killing FFmpeg process.");
-              ffmpegProcess.kill();
-            };
-          }
-
-          // 等待 m3u8 文件被 ffmpeg 创建
-          await waitForFile(requestedFilePath, 20000);
-
-          // 【关键】读取、修改并返回 m3u8 内容
-          const originalContent = await fs.readFile(requestedFilePath, "utf-8");
-          const modifiedContent = originalContent
-            .split("\n")
-            .map((line) =>
-              line.trim().endsWith(".ts")
-                ? `${line}?moviePath=${encodeURIComponent(moviePath)}`
-                : line
-            )
-            .join("\n");
-
-          c.header("Content-Type", "application/vnd.apple.mpegurl");
-          return c.body(modifiedContent);
-        }
-
-        // === .ts 请求处理逻辑 ===
-        else if (requestedFile.endsWith(".ts")) {
-          // 由于 m3u8 已被修改，这里的请求将包含 moviePath，因此权限中间件会通过
-          await waitForFile(requestedFilePath, 10000);
-
-          if (
-            !existsSync(requestedFilePath) ||
-            !path
-              .resolve(requestedFilePath)
-              .startsWith(path.resolve(HLS_CACHE_DIR))
-          ) {
-            throw new HTTPException(404, { message: "Segment not found" });
-          }
-
-          const fileStream = createReadStream(requestedFilePath);
-          const webStream = Readable.toWeb(fileStream) as any;
-          c.header("Content-Type", "video/mp2t");
-          return c.body(webStream, 200);
-        }
-
-        // 捕获其他不合法请求
-        else {
-          throw new HTTPException(400, { message: "Invalid HLS request." });
-        }
-      } catch (e: any) {
-        consola.error("playHls error", e);
-        if (e instanceof HTTPException) throw e;
-        throw new HTTPException(500, { message: "Server Error" });
+      const { moviePath } = c.req.valid("query");
+      const files = await fs.readdir(moviePath);
+      const videoFile = files.find((f) => f.endsWith(".mkv"));
+      if (!videoFile) {
+        throw new HTTPException(404, { message: "Video file not found" });
       }
+
+      const CACHE_DIR = path.join(moviePath, ".cache", "hls");
+      fs.mkdir(CACHE_DIR, { recursive: true });
+      const originalPath = path.join(moviePath, videoFile);
+      const cacheId = Buffer.from(originalPath).toString("base64url");
+
+      const completedJobs = await hlsQueue.getJobs(["completed"]);
+      const completedJob = completedJobs.find(
+        (job) => job?.data?.inputPath === originalPath
+      );
+
+      const activeJobs = await hlsQueue.getJobs(["active", "waiting"]);
+      const existingJob = activeJobs.find(
+        (job) => job?.data?.inputPath === originalPath
+      );
+
+      if (completedJob) {
+        consola.success(
+          `[Backend] 转码已经完成: ${originalPath}, Job ID: ${completedJob.id}`
+        );
+        return c.json({
+          status: "COMPLETED",
+          message: "Video processing has completed.",
+          jobId: completedJob.id,
+          outputPath: completedJob.data.outputPath,
+        });
+      }
+
+      if (existingJob) {
+        consola.success(
+          `[Backend] 转码进行中: ${originalPath}, Job ID: ${existingJob.id}`
+        );
+        return c.json({
+          status: "PROCESSING",
+          message: "Video is being processed. Please check back shortly.",
+          jobId: existingJob.id,
+          outputPath: existingJob.data.outputPath,
+        });
+      }
+
+      await hlsQueue.add(
+        "hls",
+        {
+          inputPath: originalPath,
+          outputPath: CACHE_DIR,
+        },
+        { jobId: cacheId }
+      );
+
+      consola.success(
+        `[Backend] 添加新任务: ${originalPath}, Job ID: ${cacheId}`
+      );
+      return c.json({
+        status: "QUEUED",
+        message: "Video processing has started.",
+        jobId: cacheId,
+        outputPath: CACHE_DIR,
+      });
+    }
+  )
+  .get(
+    "/hlsProgress",
+    zValidator("query", remuxStatusSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const { jobId } = c.req.valid("query");
+      const job = await hlsQueue.getJob(jobId);
+      if (!job) {
+        throw new HTTPException(404, { message: "Job not found" });
+      }
+      const progress = await job.progress;
+      return c.json({ progress });
     }
   )
   .get(

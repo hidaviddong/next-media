@@ -79,3 +79,8 @@ export interface RemuxToMp4Job {
   inputPath: string;
   outputPath: string;
 }
+
+export interface HlsJob {
+  inputPath: string;
+  outputPath: string;
+}

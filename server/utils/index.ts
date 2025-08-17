@@ -1,8 +1,20 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
 import type { Job } from "bullmq";
-import { RemuxToMp4Job } from "@/lib/types";
+import {
+  HlsJob,
+  RemuxToMp4Job,
+  TmdbApiRequestJob,
+  TmdbMovieResponse,
+} from "@/lib/types";
 import consola from "consola";
+import { library, library_movies, movie } from "../drizzle/schema";
+import { and, eq } from "drizzle-orm";
+import { db } from "../drizzle";
+import { TMDB_BASE_URL } from "@/lib/constant";
+import { nanoid } from "nanoid";
+import path from "node:path";
+
+const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN!;
 
 export interface MovieInfo {
   streams: Record<string, any>[];
@@ -38,6 +50,100 @@ export const remuxToMp4_mock = async (job: Job<RemuxToMp4Job>) => {
   return { outputPath, status: "Completed" };
 };
 
+export const tmdbApiRequest = async (job: Job<TmdbApiRequestJob>) => {
+  const { userId, libraryPath, filePath, movieTitle, year } = job.data;
+  console.log(`Processing job ${job.id} for file: ${filePath}`);
+
+  // =================================================================
+  // 1. 获取 Library (逻辑不变)
+  // =================================================================
+  const lib = await db.query.library.findFirst({
+    where: and(eq(library.path, libraryPath), eq(library.userId, userId)),
+  });
+  if (!lib) {
+    throw new Error(
+      `Library with path "${libraryPath}" not found for user ${userId}`
+    );
+  }
+
+  // =================================================================
+  // 2. 请求 TMDB API
+  // =================================================================
+  console.log(`Fetching TMDB data for: "${movieTitle}" (${year})`);
+  const url = `${TMDB_BASE_URL}/search/movie?query=${encodeURIComponent(
+    movieTitle
+  )}${year ? `&year=${year}` : ""}`;
+
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${TMDB_ACCESS_TOKEN}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`TMDB API request failed`);
+  }
+  const data = await res.json();
+  const tmdbResult = data.results?.[0] as TmdbMovieResponse;
+
+  console.log("tmdbResult", tmdbResult);
+
+  if (!tmdbResult) {
+    throw new Error(`No movie found on TMDB for query: "${movieTitle}"`);
+  }
+  console.log(`Found TMDB ID: ${tmdbResult.id}.`);
+
+  // =================================================================
+  // 3. 查找或创建电影主数据
+  //    确保电影元数据在 `movie` 表中是唯一的。
+  // =================================================================
+
+  let movieRecord = await db.query.movie.findFirst({
+    where: eq(movie.tmdbId, tmdbResult.id),
+  });
+
+  if (!movieRecord) {
+    const newMovies = await db
+      .insert(movie)
+      .values({
+        id: nanoid(),
+        tmdbId: tmdbResult.id,
+        name: tmdbResult.title,
+        overview: tmdbResult.overview,
+        year: tmdbResult.release_date,
+        poster: tmdbResult.poster_path,
+      })
+      .returning();
+    movieRecord = newMovies[0];
+  }
+
+  const existingLink = await db.query.library_movies.findFirst({
+    where: and(
+      eq(library_movies.libraryId, lib.id),
+      eq(library_movies.movieId, movieRecord.id)
+    ),
+  });
+
+  if (existingLink) {
+    console.log(
+      `Movie "${movieRecord.name}" is already linked to library "${lib.path}". Skipping.`
+    );
+    return { message: "Movie already linked." };
+  }
+
+  await db.insert(library_movies).values({
+    libraryId: lib.id,
+    movieId: movieRecord.id,
+    path: path.join(libraryPath, filePath),
+  });
+
+  console.log(
+    `Successfully linked movie "${movieRecord.name}" from path "${filePath}" to library "${lib.path}".`
+  );
+  return { success: true };
+};
+
 export const remuxToMp4 = async (job: Job<RemuxToMp4Job>) => {
   const { inputPath, outputPath } = job.data;
   consola.info(`[Worker] 开始转码: ${inputPath}`);
@@ -55,9 +161,56 @@ export const remuxToMp4 = async (job: Job<RemuxToMp4Job>) => {
     outputPath,
   ];
 
-  // 执行 FFmpeg 进程
+  try {
+    await executeFFmpeg(ffmpegArgs, job, totalDurationInSeconds);
+  } catch (e) {
+    throw e;
+  }
+};
+
+export const hls = async (job: Job<HlsJob>) => {
+  const { inputPath, outputPath } = job.data;
+  const tsFilename = path.join(outputPath, "segment%03d.ts");
+  const m3u8Path = path.join(outputPath, "output.m3u8");
+  consola.info(`[Worker] 开始转码为m3u8: ${inputPath}`);
+  const movieInfo = await getMovieInfo(inputPath);
+  const totalDurationString = movieInfo.format.duration;
+  const totalDurationInSeconds = parseFloat(totalDurationString);
+
+  const ffmpegArgs = [
+    "-y",
+    "-i",
+    inputPath,
+    "-c:v",
+    "copy",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "192k",
+    "-sn",
+    "-f",
+    "hls",
+    "-hls_time",
+    "4",
+    "-hls_list_size",
+    "0",
+    "-hls_segment_filename",
+    tsFilename,
+    m3u8Path,
+  ];
+  try {
+    await executeFFmpeg(ffmpegArgs, job, totalDurationInSeconds);
+  } catch (e) {
+    throw e;
+  }
+};
+
+function executeFFmpeg(
+  ffmpegArgs: string[],
+  job: Job,
+  totalDurationInSeconds: number
+) {
   return new Promise((resolve, reject) => {
-    consola.info("Executing FFmpeg with args:", ffmpegArgs.join(" "));
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
     let errorOutput = "";
     ffmpegProcess.stderr.on("data", async (data) => {
@@ -86,10 +239,8 @@ export const remuxToMp4 = async (job: Job<RemuxToMp4Job>) => {
         await job.updateProgress(100);
         resolve("");
       } else {
-        const errorMessage = `Failed to process ${inputPath}. FFmpeg exited with code ${code}.`;
-        consola.error(errorMessage);
         consola.error("FFmpeg error output:", errorOutput);
-        reject(new Error(errorMessage));
+        reject(new Error(`FFmpeg exited with code ${code}.`));
       }
     });
 
@@ -98,7 +249,7 @@ export const remuxToMp4 = async (job: Job<RemuxToMp4Job>) => {
       reject(err);
     });
   });
-};
+}
 
 export function getMovieInfo(moviePath: string): Promise<MovieInfo> {
   return new Promise((resolve, reject) => {
@@ -149,20 +300,5 @@ export function getMovieInfo(moviePath: string): Promise<MovieInfo> {
         );
       }
     });
-  });
-}
-
-export function waitForFile(filePath: string, timeout = 20000): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const startTime = Date.now();
-    const interval = setInterval(() => {
-      if (existsSync(filePath)) {
-        clearInterval(interval);
-        resolve();
-      } else if (Date.now() - startTime > timeout) {
-        clearInterval(interval);
-        reject(new Error(`File creation timed out: ${filePath}`));
-      }
-    }, 500);
   });
 }

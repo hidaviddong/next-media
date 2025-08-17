@@ -8,6 +8,8 @@ import {
   useMovieRemux,
   useMovieSubtitleLists,
   useMovieRemuxProgress,
+  useMovieHls,
+  useMovieHlsProgress,
 } from "../hooks";
 import { useEffect, useRef } from "react";
 import Hls from "hls.js";
@@ -37,7 +39,14 @@ export default function MoviePlayer({
     moviePath
   );
   const remuxProgress = movieRemuxProgressQuery.data?.progress;
-  const outputPath = movieRemuxQuery.data?.outputPath;
+  const remuxOutputPath = movieRemuxQuery.data?.outputPath;
+
+  // hls
+  const { movieHlsQuery } = useMovieHls(moviePath, movieType);
+  const hlsJobId = movieHlsQuery.data?.jobId;
+  const { movieHlsProgressQuery } = useMovieHlsProgress(hlsJobId, moviePath);
+  const hlsProgress = movieHlsProgressQuery.data?.progress;
+  const hlsOutputPath = movieHlsQuery.data?.outputPath;
 
   useEffect(() => {
     if (videoRef.current && movieType) {
@@ -50,29 +59,53 @@ export default function MoviePlayer({
         case "remux":
           if (remuxProgress === 100) {
             videoRef.current.src = `/api/movie/directPlay?moviePath=${encodeURIComponent(
-              getDirname(outputPath)
+              getDirname(remuxOutputPath)
             )}`;
           }
           break;
         case "hls":
           if (Hls.isSupported()) {
-            // const hls = new Hls();
-            // const hlsSource = `/api/movie/playHls/output.m3u8?moviePath=${encodeURIComponent(
-            //   moviePath
-            // )}`;
-            // hls.loadSource(hlsSource);
-            // hls.attachMedia(videoRef.current);
+            const hls = new Hls({
+              maxBufferLength: 10,
+            });
+            const manifestName = "output.m3u8";
+            const hlsSource = `/api/movie/hlsPlay?filename=${manifestName}&moviePath=${encodeURIComponent(
+              hlsOutputPath
+            )}`;
+            if (hlsProgress === 100) {
+              hls.loadSource(hlsSource);
+              hls.attachMedia(videoRef.current);
+            }
+          } else {
+            toast.error("Your browser does not support HLS.");
           }
-          // TODO
+
           break;
       }
     }
-  }, [moviePath, videoRef, movieType, remuxProgress, outputPath]);
+  }, [
+    moviePath,
+    videoRef,
+    movieType,
+    remuxProgress,
+    hlsProgress,
+    remuxOutputPath,
+    hlsOutputPath,
+  ]);
 
   if (remuxProgress < 100) {
     return (
       <MovieProgress
         progress={remuxProgress}
+        poster={`${TMDB_IMAGE_BASE_URL}${posterPath}`}
+      />
+    );
+  }
+
+  if (hlsProgress < 100) {
+    return (
+      <MovieProgress
+        progress={hlsProgress}
         poster={`${TMDB_IMAGE_BASE_URL}${posterPath}`}
       />
     );

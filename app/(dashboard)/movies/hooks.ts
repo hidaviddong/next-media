@@ -19,6 +19,8 @@ export const KEYS = {
   MOVIE_PLAY: ["moviePlay"],
   MOVIE_REMUX: ["movieRemux"],
   MOVIE_REMUX_PROGRESS: ["movieRemuxProgress"],
+  MOVIE_HLS: ["movieHls"],
+  MOVIE_HLS_PROGRESS: ["movieHlsProgress"],
 };
 
 export function useQueueMovies() {
@@ -87,7 +89,8 @@ export function useQueueStatus() {
   });
 
   if (queueStatusQuery.data?.stats.active === 0) {
-    queryClient.invalidateQueries({ queryKey: [...KEYS.QUEUE_STATUS] });
+    queryClient.invalidateQueries({ queryKey: [...KEYS.MOVIE_LISTS] });
+    queryClient.invalidateQueries({ queryKey: [...KEYS.USER_LIBRARY] });
   }
   return { queueStatusQuery };
 }
@@ -172,4 +175,34 @@ export function useMovieRemuxProgress(jobId: string, moviePath: string) {
     enabled: !!jobId,
   });
   return { movieRemuxProgressQuery };
+}
+
+export function useMovieHls(moviePath: string, movieType?: MovieType) {
+  const movieHlsQuery = useQuery({
+    queryKey: [...KEYS.MOVIE_HLS, moviePath],
+    queryFn: async () => {
+      const response = await client.api.movie.hls.$get({
+        query: { moviePath },
+      });
+      return response.json();
+    },
+    enabled: movieType === "hls",
+  });
+  return { movieHlsQuery };
+}
+export function useMovieHlsProgress(jobId: string, moviePath: string) {
+  const movieHlsProgressQuery = useQuery({
+    queryKey: [...KEYS.MOVIE_HLS_PROGRESS, jobId],
+    queryFn: async () => {
+      const response = await client.api.movie.hlsProgress.$get({
+        query: { jobId, moviePath },
+      });
+      return response.json();
+    },
+    refetchInterval: (query) => {
+      return query.state.data?.progress === 100 ? false : 1000;
+    },
+    enabled: !!jobId,
+  });
+  return { movieHlsProgressQuery };
 }
