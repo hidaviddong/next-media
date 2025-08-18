@@ -1,5 +1,5 @@
 "use client";
-
+import Hls from "hls.js";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
 import { toast } from "sonner";
 import MovieInfo from "./movie-info";
@@ -12,7 +12,6 @@ import {
   useMovieHlsProgress,
 } from "../hooks";
 import { useEffect, useRef } from "react";
-import Hls from "hls.js";
 import { getDirname, getSubtitleSrc } from "@/lib/utils";
 import { MovieProgress } from "./movie-progress";
 
@@ -23,7 +22,11 @@ export default function MoviePlayer({
   moviePath: string;
   posterPath: string;
 }) {
+  const userAgent = navigator.userAgent;
+  const isSafari =
+    userAgent.includes("Safari") && !userAgent.includes("Chrome");
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
   // movie info
   const { movieInfoQuery } = useMovieInfo(moviePath);
@@ -49,14 +52,23 @@ export default function MoviePlayer({
   const hlsOutputPath = movieHlsQuery.data?.outputPath;
 
   useEffect(() => {
+    const cleanup = () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+
     if (videoRef.current && movieType) {
       switch (movieType) {
         case "direct":
+          cleanup(); // 如果從 HLS 切換過來，先清理
           videoRef.current.src = `/api/movie/directPlay?moviePath=${encodeURIComponent(
             moviePath
           )}`;
           break;
         case "remux":
+          cleanup(); // 如果從 HLS 切換過來，先清理
           if (remuxProgress === 100) {
             videoRef.current.src = `/api/movie/directPlay?moviePath=${encodeURIComponent(
               getDirname(remuxOutputPath)
@@ -64,28 +76,63 @@ export default function MoviePlayer({
           }
           break;
         case "hls":
-          if (Hls.isSupported()) {
-            const hls = new Hls({
-              maxBufferLength: 10,
-            });
-            const manifestName = "output.m3u8";
-            const hlsSource = `/api/movie/hlsPlay?filename=${manifestName}&moviePath=${encodeURIComponent(
+          if (hlsProgress === 100 && hlsOutputPath) {
+            const hlsSource = `/api/movie/hlsPlay?filename=output.m3u8&moviePath=${encodeURIComponent(
               hlsOutputPath
             )}`;
-            if (hlsProgress === 100) {
-              hls.loadSource(hlsSource);
-              hls.attachMedia(videoRef.current);
+            if (isSafari) {
+              videoRef.current.src = hlsSource;
+            } else {
+              if (Hls.isSupported()) {
+                if (!hlsRef.current) {
+                  hlsRef.current = new Hls();
+                  hlsRef.current.on(Hls.Events.ERROR, function (event, data) {
+                    console.error("HLS.js Error:", data);
+                    if (data.fatal) {
+                      switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                          console.error(
+                            "Fatal network error encountered",
+                            data
+                          );
+                          // 嘗試恢復
+                          hlsRef.current?.startLoad();
+                          break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                          console.error("Fatal media error encountered", data);
+                          hlsRef.current?.recoverMediaError();
+                          break;
+                        default:
+                          // 無法恢復的錯誤
+                          console.error(
+                            "An unrecoverable error occurred",
+                            data
+                          );
+                          hlsRef.current?.destroy();
+                          break;
+                      }
+                    }
+                  });
+                }
+                hlsRef.current.loadSource(hlsSource);
+                hlsRef.current.attachMedia(videoRef.current);
+              } else if (
+                videoRef.current.canPlayType("application/vnd.apple.mpegurl")
+              ) {
+                videoRef.current.src = hlsSource;
+              } else {
+                toast.error("Your browser does not support HLS.");
+              }
             }
-          } else {
-            toast.error("Your browser does not support HLS.");
           }
-
           break;
       }
     }
+
+    // 3. 返回清理函數
+    return cleanup;
   }, [
     moviePath,
-    videoRef,
     movieType,
     remuxProgress,
     hlsProgress,

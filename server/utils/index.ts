@@ -181,12 +181,29 @@ export const hls = async (job: Job<HlsJob>) => {
     "-y",
     "-i",
     inputPath,
+
+    "-map",
+    "0:v:0",
+    "-map",
+    "0:a:0",
+
     "-c:v",
     "copy",
+
+    // 濾鏡
+    "-af",
+    "pan=stereo",
+
+    // Encoder 及其參數
     "-c:a",
     "aac",
+    "-ar",
+    "48000",
     "-b:a",
     "192k",
+    "-strict",
+    "-2",
+
     "-sn",
     "-f",
     "hls",
