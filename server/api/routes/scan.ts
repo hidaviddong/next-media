@@ -3,24 +3,14 @@ import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import fs from "fs/promises";
-
-function parseMovieFolder(folder: string) {
-  let name = folder.trim();
-  if (!name) return null;
-  let year: string | undefined = undefined;
-  const nameMatch = name.match(/^(.*?)\s*\((\d{4})\)$/);
-  if (nameMatch && nameMatch[1]) {
-    name = nameMatch[1];
-    year = nameMatch[2];
-  }
-  return { name, year };
-}
+import { parseMovieFolder } from "@/server/utils";
+import type { Variables } from "../type";
 
 const scanSchema = z.object({
   libraryPath: z.string(),
 });
 
-export const scanRoute = new Hono().post(
+export const scanRoute = new Hono<{ Variables: Variables }>().post(
   "/",
   zValidator("json", scanSchema, (result, c) => {
     if (!result.success) {

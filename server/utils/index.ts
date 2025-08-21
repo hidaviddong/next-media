@@ -28,6 +28,18 @@ export interface SubtitleTrackInfo {
   path?: string; // 如果是外部文件，它的路径
 }
 
+export function parseMovieFolder(folder: string) {
+  let name = folder.trim();
+  if (!name) return null;
+  let year: string | undefined = undefined;
+  const nameMatch = name.match(/^(.*?)\s*\((\d{4})\)$/);
+  if (nameMatch && nameMatch[1]) {
+    name = nameMatch[1];
+    year = nameMatch[2];
+  }
+  return { name, year };
+}
+
 function parseTimeToSeconds(timeString: string) {
   const parts = timeString.split(":");
   const hours = parseFloat(parts[0]);
