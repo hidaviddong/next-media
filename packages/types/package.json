@@ -1,0 +1,17 @@
+{
+  "name": "@next-media/types",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@next-media/queue",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx ./worker.ts",
+    "build": "tsc"
+  },
+  "exports": {
+    "./queue": {
+      "types": "./src/queue.ts",
+      "default": "./dist/queue.js"
+    },
+    "./worker": {
+      "types": "./src/worker.ts",
+      "default": "./dist/worker.js"
+    }
+  },
+  "dependencies": {
+    "@next-media/db": "workspace:*",
+    "@next-media/types": "workspace:*",
+    "bullmq": "^5.56.9",
+    "dotenv": "^17.2.1",
+    "ioredis": "^5.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5.9.2"
+  }
+}

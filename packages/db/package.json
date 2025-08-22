@@ -1,0 +1,30 @@
+{
+  "name": "@next-media/db",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "exports": {
+    "./db": {
+      "types": "./src/db.ts",
+      "default": "./dist/db.js"
+    },
+    "./schema": {
+      "types": "./src/schema.ts",
+      "default": "./dist/schema.js"
+    }
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.10",
+    "@next-media/types": "workspace:*",
+    "dotenv": "^17.2.1",
+    "drizzle-orm": "^0.44.4",
+    "nanoid": "^5.1.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.11",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  }
+}
