@@ -2,6 +2,7 @@ import {
   createLibrary,
   getLibrary,
   getLibraryMoviesByLibraryId,
+  getMovieByTmdbId,
   getMoviePathByTmdbIdAndUserId,
   getMoviesByUserId,
   getUserMovieAccess,
@@ -23,6 +24,10 @@ import path from "node:path";
 import type { SubtitleTrackInfo, MovieType } from "@next-media/types";
 import { getMovieInfo } from "../utils.js";
 import { spawn } from "node:child_process";
+
+const detailSchema = z.object({
+  tmdbId: z.string(),
+});
 
 const queueSchema = z.object({
   movies: z.array(
@@ -248,6 +253,22 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
     }
     await next();
   })
+  .get(
+    "/detail",
+    zValidator("query", detailSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const { tmdbId } = c.req.valid("query");
+      const movie = await getMovieByTmdbId(Number(tmdbId));
+      if (!movie) {
+        throw new HTTPException(404, { message: "Movie not found" });
+      }
+      return c.json(movie);
+    }
+  )
   .get(
     "/directPlay",
     zValidator("query", directPlaySchema, (result, c) => {

@@ -2,16 +2,17 @@
   "name": "@next-media/db",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "dev": "npx drizzle-kit studio",
+    "push": "npx drizzle-kit push"
   },
   "exports": {
     "./db": {
       "types": "./src/db.ts",
-      "default": "./dist/db.js"
+      "default": "./src/db.ts"
     },
     "./schema": {
       "types": "./src/schema.ts",
-      "default": "./dist/schema.js"
+      "default": "./src/schema.ts"
     }
   },
   "dependencies": {

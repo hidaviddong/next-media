@@ -17,3 +17,5 @@ Next media is a media management system (eg. Jellyfin, Emby, Plex)
 - [x] 动态切换播放模式(direct play / remux to mp4 / m3u8)
 - [ ] 加载字幕
 - [ ] 自定义上传字幕
+- [ ] migrate to monorepo
+

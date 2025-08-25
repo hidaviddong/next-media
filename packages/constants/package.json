@@ -1,5 +1,5 @@
 {
-  "name": "@next-media/types",
+  "name": "@next-media/constants",
   "type": "module",
   "exports": {
     ".": {

@@ -2,20 +2,20 @@
   "name": "@next-media/queue",
   "type": "module",
   "scripts": {
-    "dev": "tsx ./worker.ts",
-    "build": "tsc"
+    "dev": "tsx src/worker.ts"
   },
   "exports": {
     "./queue": {
       "types": "./src/queue.ts",
-      "default": "./dist/queue.js"
+      "default": "./src/queue.ts"
     },
     "./worker": {
       "types": "./src/worker.ts",
-      "default": "./dist/worker.js"
+      "default": "./src/worker.ts"
     }
   },
   "dependencies": {
+    "@next-media/constants": "workspace:*",
     "@next-media/db": "workspace:*",
     "@next-media/types": "workspace:*",
     "bullmq": "^5.56.9",
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "tsx": "^4.20.3",
     "typescript": "^5.9.2"
   }
 }

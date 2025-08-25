@@ -1,53 +1,49 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/libsql";
 import { and, eq, desc } from "drizzle-orm";
-import * as schema from "./schema.js";
+import { movie, library, library_movies } from "./schema";
 import { nanoid } from "nanoid";
 import type { TmdbMovieResponse } from "@next-media/types";
 
-export const db = drizzle(process.env.DB_FILE_NAME!, { schema });
+export const db = drizzle(process.env.DB_FILE_NAME!, {
+  schema: { movie, library, library_movies },
+});
 
 export function getMoviesByUserId(userId: string) {
   return db
     .select({
-      movie: schema.movie,
-      path: schema.library_movies.path,
+      movie: movie,
+      path: library_movies.path,
     })
-    .from(schema.library)
-    .where(eq(schema.library.userId, userId))
-    .innerJoin(
-      schema.library_movies,
-      eq(schema.library.id, schema.library_movies.libraryId)
-    )
-    .innerJoin(schema.movie, eq(schema.library_movies.movieId, schema.movie.id))
-    .orderBy(desc(schema.movie.createdAt));
+    .from(library)
+    .where(eq(library.userId, userId))
+    .innerJoin(library_movies, eq(library.id, library_movies.libraryId))
+    .innerJoin(movie, eq(library_movies.movieId, movie.id))
+    .orderBy(desc(movie.createdAt));
 }
 
 export function getLibrary(userId: string, libraryPath: string) {
   return db.query.library.findFirst({
-    where: and(
-      eq(schema.library.path, libraryPath),
-      eq(schema.library.userId, userId)
-    ),
+    where: and(eq(library.path, libraryPath), eq(library.userId, userId)),
   });
 }
 
 export function getMovieByTmdbId(tmdbId: number) {
   return db.query.movie.findFirst({
-    where: eq(schema.movie.tmdbId, tmdbId),
+    where: eq(movie.tmdbId, tmdbId),
   });
 }
 
 export function createLibrary(userId: string, libraryPath: string) {
   return db
-    .insert(schema.library)
+    .insert(library)
     .values({ id: nanoid(), userId, path: libraryPath })
     .returning();
 }
 
 export function createMovie(tmdbResult: TmdbMovieResponse) {
   return db
-    .insert(schema.movie)
+    .insert(movie)
     .values({
       id: nanoid(),
       tmdbId: tmdbResult.id,
@@ -64,7 +60,7 @@ export function createLibraryMovie(
   movieId: string,
   path: string
 ) {
-  return db.insert(schema.library_movies).values({
+  return db.insert(library_movies).values({
     libraryId,
     movieId,
     path,
@@ -77,58 +73,44 @@ export function getLibraryMovieByLibraryIdAndMovieId(
 ) {
   return db.query.library_movies.findFirst({
     where: and(
-      eq(schema.library_movies.libraryId, libraryId),
-      eq(schema.library_movies.movieId, movieId)
+      eq(library_movies.libraryId, libraryId),
+      eq(library_movies.movieId, movieId)
     ),
   });
 }
 
 export function getLibraryMovies(libraryId: string) {
   return db.query.library_movies.findMany({
-    where: eq(schema.library_movies.libraryId, libraryId),
+    where: eq(library_movies.libraryId, libraryId),
   });
 }
 
 export function getLibraryMoviesByLibraryId(libraryId: string) {
   return db
-    .select({ path: schema.library_movies.path })
-    .from(schema.library_movies)
-    .where(eq(schema.library_movies.libraryId, libraryId));
+    .select({ path: library_movies.path })
+    .from(library_movies)
+    .where(eq(library_movies.libraryId, libraryId));
 }
 
 export function getMoviePathByTmdbIdAndUserId(tmdbId: string, userId: string) {
   return db
     .select({
-      path: schema.library_movies.path,
+      path: library_movies.path,
     })
-    .from(schema.library_movies)
-    .innerJoin(
-      schema.library,
-      eq(schema.library_movies.libraryId, schema.library.id)
-    )
-    .innerJoin(schema.movie, eq(schema.library_movies.movieId, schema.movie.id))
-    .where(
-      and(
-        eq(schema.library.userId, userId),
-        eq(schema.movie.tmdbId, parseInt(tmdbId))
-      )
-    );
+    .from(library_movies)
+    .innerJoin(library, eq(library_movies.libraryId, library.id))
+    .innerJoin(movie, eq(library_movies.movieId, movie.id))
+    .where(and(eq(library.userId, userId), eq(movie.tmdbId, parseInt(tmdbId))));
 }
 
 export function getUserMovieAccess(userId: string, moviePath: string) {
   return db
     .select({
-      path: schema.library_movies.path,
+      path: library_movies.path,
     })
-    .from(schema.library_movies)
-    .innerJoin(
-      schema.library,
-      eq(schema.library_movies.libraryId, schema.library.id)
-    )
+    .from(library_movies)
+    .innerJoin(library, eq(library_movies.libraryId, library.id))
     .where(
-      and(
-        eq(schema.library.userId, userId!),
-        eq(schema.library_movies.path, moviePath!)
-      )
+      and(eq(library.userId, userId!), eq(library_movies.path, moviePath!))
     );
 }

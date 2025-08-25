@@ -9,9 +9,9 @@
     "isolatedModules": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "module": "es2022",
-    "moduleResolution": "Bundler",
+    "module": "NodeNext",
     "outDir": "./dist"
   },
+  "include": ["src"],
   "exclude": ["node_modules"]
 }
