@@ -81,6 +81,9 @@ export const library = sqliteTable("library", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  maxCacheBytes: integer("max_cache_bytes", { mode: "number" }).default(
+    1024 * 1024 * 1024 * 50
+  ),
 });
 
 export const movie = sqliteTable("movie", {

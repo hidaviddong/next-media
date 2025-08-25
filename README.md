@@ -15,5 +15,6 @@ Next media is a media management system (eg. Jellyfin, Emby, Plex)
 - [x] 浏览器不支持 DTS 音频，需要转换 (转换后有时还是没声音)
 - [x] 支持 m3u8 续传
 - [x] 动态切换播放模式(direct play / remux to mp4 / m3u8)
+- [ ] LRU
 - [ ] 加载字幕
 - [ ] 自定义上传字幕

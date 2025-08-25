@@ -13,11 +13,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useSetAtom } from "jotai";
-import { hasPlayButtonClickAtom } from "@/lib/store";
+import { hasPlayButtonClickAtom, settingsDialogOpenAtom } from "@/lib/store";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function AppHeader() {
   const setHasPlayButtonClick = useSetAtom(hasPlayButtonClickAtom);
+  const setSettingsDialogOpen = useSetAtom(settingsDialogOpenAtom);
   const queryClient = useQueryClient();
   const router = useRouter();
   const { data: session } = authClient.useSession();
@@ -70,7 +71,11 @@ export default function AppHeader() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setSettingsDialogOpen(true);
+                }}
+              >
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>

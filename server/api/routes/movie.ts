@@ -27,6 +27,7 @@ const queueSchema = z.object({
       year: z.string().optional(),
     })
   ),
+  maxCacheBytes: z.number().optional(),
 });
 
 const moviePathSchema = z.object({
@@ -87,7 +88,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
     }),
     async (c) => {
       const userId = c.get("user")?.id;
-      const { movies: incomingMovies } = c.req.valid("json");
+      const { movies: incomingMovies, maxCacheBytes } = c.req.valid("json");
 
       if (incomingMovies.length === 0) {
         return c.json({ success: true, message: "No movies to process." });
@@ -102,7 +103,12 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       if (!lib) {
         const newLibraries = await db
           .insert(library)
-          .values({ id: nanoid(), userId: userId!, path: libraryPath })
+          .values({
+            id: nanoid(),
+            userId: userId!,
+            path: libraryPath,
+            maxCacheBytes: maxCacheBytes ?? 1024 * 1024 * 1024 * 50,
+          })
           .returning();
         lib = newLibraries[0];
       }

@@ -30,6 +30,7 @@ export function useQueueMovies() {
       await client.api.movie.queue.$post({
         json: {
           movies: body.movies,
+          maxCacheBytes: body.maxCacheBytes,
         },
       });
     },
