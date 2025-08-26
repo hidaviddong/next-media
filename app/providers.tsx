@@ -1,4 +1,5 @@
 "use client";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   isServer,
@@ -43,7 +44,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <NuqsAdapter>{children}</NuqsAdapter>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

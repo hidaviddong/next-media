@@ -6,7 +6,6 @@ import {
   TmdbApiRequestJob,
   TmdbMovieResponse,
 } from "@/lib/types";
-import consola from "consola";
 import { library, library_movies, movie } from "../drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { db } from "../drizzle";
@@ -91,15 +90,15 @@ function parseTimeToSeconds(timeString: string) {
 
 export const remuxToMp4_mock = async (job: Job<RemuxToMp4Job>) => {
   const { inputPath, outputPath } = job.data;
-  consola.info(`[Worker] 开始转码: ${inputPath}`);
+  console.log(`[Worker] 开始转码: ${inputPath}`);
 
   for (let i = 0; i <= 100; i++) {
     await new Promise((resolve) => setTimeout(resolve, 150));
     await job.updateProgress(i);
-    consola.info(`[Worker] 进度: ${inputPath} - ${i}%`);
+    console.log(`[Worker] 进度: ${inputPath} - ${i}%`);
   }
 
-  consola.info(`[Worker] 转码完成: ${inputPath}`);
+  console.log(`[Worker] 转码完成: ${inputPath}`);
   return { outputPath, status: "Completed" };
 };
 
@@ -199,7 +198,7 @@ export const tmdbApiRequest = async (job: Job<TmdbApiRequestJob>) => {
 
 export const remuxToMp4 = async (job: Job<RemuxToMp4Job>) => {
   const { inputPath, outputPath } = job.data;
-  consola.info(`[Worker] 开始转码: ${inputPath}`);
+  console.log(`[Worker] 开始转码: ${inputPath}`);
 
   const movieInfo = await getMovieInfo(inputPath);
   const totalDurationString = movieInfo.format.duration;
@@ -225,7 +224,7 @@ export const hls = async (job: Job<HlsJob>) => {
   const { inputPath, outputPath } = job.data;
   const tsFilename = path.join(outputPath, "segment%03d.ts");
   const m3u8Path = path.join(outputPath, "output.m3u8");
-  consola.info(`[Worker] 开始转码为m3u8: ${inputPath}`);
+  console.log(`[Worker] 开始转码为m3u8: ${inputPath}`);
   const movieInfo = await getMovieInfo(inputPath);
   const totalDurationString = movieInfo.format.duration;
   const totalDurationInSeconds = parseFloat(totalDurationString);
@@ -309,13 +308,13 @@ function executeFFmpeg(
         await job.updateProgress(100);
         resolve("");
       } else {
-        consola.error("FFmpeg error output:", errorOutput);
+        console.log("FFmpeg error output:", errorOutput);
         reject(new Error(`FFmpeg exited with code ${code}.`));
       }
     });
 
     ffmpegProcess.on("error", (err) => {
-      consola.error("Failed to start FFmpeg process.", err);
+      console.log("Failed to start FFmpeg process.", err);
       reject(err);
     });
   });
@@ -346,7 +345,7 @@ export function getMovieInfo(moviePath: string): Promise<MovieInfo> {
     });
 
     ffprobe.on("error", (err) => {
-      consola.error("Failed to start ffprobe process.", err);
+      console.log("Failed to start ffprobe process.", err);
       reject(err);
     });
 

@@ -42,6 +42,18 @@ export type MovieInfoResponseType = InferResponseType<
   typeof client.api.movie.movieInfo.$get
 >;
 
+export type MovieStatusResponseType = InferResponseType<
+  typeof client.api.movie.movieStatus.$get
+>;
+
+export type PlayHistoryRequestType = InferRequestType<
+  typeof client.api.movie.playHistory.$post
+>["json"];
+
+export type PlayHistoryResponseType = InferResponseType<
+  typeof client.api.movie.playHistory.$post
+>;
+
 export type MovieType = MovieInfoResponseType["type"];
 
 // infer drizzle orm type

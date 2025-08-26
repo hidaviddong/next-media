@@ -4,6 +4,7 @@ import {
   type ScanMoviesResponseType,
   type QueueMoviesRequestType,
   MovieType,
+  PlayHistoryRequestType,
 } from "@/lib/types";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -12,7 +13,7 @@ import client from "@/lib/hono";
 export const KEYS = {
   MOVIE_LISTS: ["movieLists"],
   QUEUE_STATUS: ["queueStatus"],
-  MOVIE_PATH: ["moviePath"],
+  MOVIE_STATUS: ["movieStatus"],
   MOVIE_INFO: ["movieInfo"],
   MOVIE_SUBTITLE_LISTS: ["movieSubtitleLists"],
   USER_LIBRARY: ["userLibrary"],
@@ -22,6 +23,7 @@ export const KEYS = {
   MOVIE_REMUX_PROGRESS: ["movieRemuxProgress"],
   MOVIE_HLS: ["movieHls"],
   MOVIE_HLS_PROGRESS: ["movieHlsProgress"],
+  MOVIE_PLAY_HISTORY: ["moviePlayHistory"],
 };
 
 export function useQueueMovies() {
@@ -99,18 +101,18 @@ export function useQueueStatus() {
   }
   return { queueStatusQuery };
 }
-export function useMoviePath(tmdbId: string) {
-  const moviePathQuery = useQuery({
-    queryKey: [...KEYS.MOVIE_PATH, tmdbId],
+export function useMovieStatus(movieId: string) {
+  const movieStatusQuery = useQuery({
+    queryKey: [...KEYS.MOVIE_STATUS, movieId],
     queryFn: async () => {
-      const response = await client.api.movie.moviePath.$get({
-        query: { tmdbId },
+      const response = await client.api.movie.movieStatus.$get({
+        query: { movieId },
       });
       return response.json();
     },
   });
 
-  return { moviePathQuery };
+  return { movieStatusQuery };
 }
 
 export function useMovieInfo(moviePath: string) {
@@ -224,4 +226,20 @@ export function useMovieHlsProgress(jobId: string, moviePath: string) {
     enabled: !!jobId,
   });
   return { movieHlsProgressQuery };
+}
+
+export function useMoviePlayHistory() {
+  const queryClient = useQueryClient();
+  const moviePlayHistoryMutation = useMutation({
+    mutationFn: async (body: PlayHistoryRequestType) => {
+      const response = await client.api.movie.playHistory.$post({
+        json: body,
+      });
+      return response.json();
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: KEYS.MOVIE_STATUS });
+    },
+  });
+  return { moviePlayHistoryMutation };
 }

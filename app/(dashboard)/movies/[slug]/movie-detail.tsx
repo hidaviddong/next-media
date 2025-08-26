@@ -9,32 +9,31 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { useAtom } from "jotai";
-import { hasPlayButtonClickAtom } from "@/lib/store";
+import { useQueryState, parseAsBoolean } from "nuqs";
 import MoviePlayer from "./movie-player";
 import type { Movie } from "@/lib/types";
 import { AnimatePresence, motion } from "motion/react";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
-import { useMoviePath } from "../hooks";
+import { useMovieStatus } from "../hooks";
 import { toast } from "sonner";
-
 interface MovieDetailProps {
   movieRecord: Movie;
 }
 
 export function MovieDetail({ movieRecord }: MovieDetailProps) {
-  const [hasPlayButtonClick, setHasPlayButtonClick] = useAtom(
-    hasPlayButtonClickAtom
+  const [playing, setPlaying] = useQueryState(
+    "playing",
+    parseAsBoolean.withDefault(false)
   );
 
-  const { moviePathQuery } = useMoviePath(movieRecord.tmdbId.toString());
-  const moviePath = moviePathQuery.data?.path;
+  const { movieStatusQuery } = useMovieStatus(movieRecord.id);
+  const movieStatus = movieStatusQuery.data;
 
   return (
     <div className="py-8">
       {/* Back Button with Movie Poster */}
       <AnimatePresence>
-        {hasPlayButtonClick && (
+        {playing && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -46,7 +45,7 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
               layoutId={`movie-${movieRecord.tmdbId}`}
               layout="position"
               className="w-8 h-8 rounded-md overflow-hidden cursor-pointer"
-              onClick={() => setHasPlayButtonClick(false)}
+              onClick={() => setPlaying(false)}
             >
               {movieRecord.poster && (
                 <Tooltip>
@@ -66,7 +65,7 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
       </AnimatePresence>
 
       <AnimatePresence initial={false} mode="wait">
-        {hasPlayButtonClick ? (
+        {playing ? (
           <motion.div
             key="player"
             initial={{ opacity: 0, y: -16 }}
@@ -75,11 +74,12 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="flex justify-center items-center min-h-[60vh] lg:min-h-0"
           >
-            {moviePath && movieRecord.poster && (
+            {movieStatus && movieRecord.poster && (
               <div className="w-full max-w-4xl mx-auto px-4">
                 <MoviePlayer
-                  moviePath={moviePath}
+                  movieStatus={movieStatus}
                   posterPath={movieRecord.poster}
+                  movieId={movieRecord.id}
                 />
               </div>
             )}
@@ -162,21 +162,23 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
                       <Button
                         onClick={() => {
                           // 如果没有电影路径
-                          if (!moviePath) {
+                          if (!movieStatus?.path) {
                             toast.error("Movie path not found");
                             return;
                           }
-                          setHasPlayButtonClick(true);
+                          setPlaying(true);
                         }}
                         size="lg"
                         className="w-full sm:w-auto bg-neutral-900 hover:bg-neutral-800 text-white cursor-pointer"
                       >
                         <Play className="w-5 h-5 mr-2" />
-                        Play
+                        {movieStatus?.progress && movieStatus.progress > 0
+                          ? "Resume"
+                          : "Play"}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{moviePath}</p>
+                      <p>{movieStatus?.path}</p>
                     </TooltipContent>
                   </Tooltip>
                 </motion.div>

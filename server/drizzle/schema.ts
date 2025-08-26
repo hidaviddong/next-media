@@ -114,3 +114,20 @@ export const library_movies = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.libraryId, t.movieId] })]
 );
+
+export const play_history = sqliteTable("play_history", {
+  id: text("id").primaryKey(),
+  movieId: text("movie_id")
+    .notNull()
+    .references(() => movie.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, {
+      onDelete: "cascade",
+    }),
+  progress: integer("progress", { mode: "number" }).default(0),
+  totalTime: integer("total_time", { mode: "number" }).default(0),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});

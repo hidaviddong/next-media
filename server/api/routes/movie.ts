@@ -1,7 +1,12 @@
 import { db } from "@/server/drizzle";
 import { HTTPException } from "hono/http-exception";
 import { hlsQueue, remuxToMp4Queue, tmdbApiRequestQueue } from "@/server/redis";
-import { movie, library, library_movies } from "@/server/drizzle/schema";
+import {
+  movie,
+  library,
+  library_movies,
+  play_history,
+} from "@/server/drizzle/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { Variables } from "../type";
@@ -14,7 +19,6 @@ import { Readable } from "node:stream";
 import path from "node:path";
 import { getMovieInfo, SubtitleTrackInfo } from "@/server/utils";
 import { spawn } from "node:child_process";
-import consola from "consola";
 
 type MovieType = "direct" | "remux" | "hls";
 
@@ -30,8 +34,8 @@ const queueSchema = z.object({
   maxCacheBytes: z.number().optional(),
 });
 
-const moviePathSchema = z.object({
-  tmdbId: z.string(),
+const movieStatusSchema = z.object({
+  movieId: z.string(),
 });
 
 const directPlaySchema = z.object({
@@ -54,6 +58,12 @@ const subtitleSchema = z.object({
 const remuxStatusSchema = z.object({
   jobId: z.string(),
   moviePath: z.string(),
+});
+
+const playHistorySchema = z.object({
+  movieId: z.string(),
+  progress: z.number(),
+  totalTime: z.number(),
 });
 
 export const movieRoute = new Hono<{ Variables: Variables }>()
@@ -223,15 +233,15 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
     });
   })
   .get(
-    "/moviePath",
-    zValidator("query", moviePathSchema, (result, c) => {
+    "/movieStatus",
+    zValidator("query", movieStatusSchema, (result, c) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
     }),
     async (c) => {
       const userId = c.get("user")?.id;
-      const { tmdbId } = c.req.query();
+      const { movieId } = c.req.valid("query");
       const result = await db
         .select({
           path: library_movies.path,
@@ -239,14 +249,56 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         .from(library_movies)
         .innerJoin(library, eq(library_movies.libraryId, library.id))
         .innerJoin(movie, eq(library_movies.movieId, movie.id))
-        .where(
-          and(eq(library.userId, userId!), eq(movie.tmdbId, parseInt(tmdbId)))
-        );
+        .where(and(eq(library.userId, userId!), eq(movie.id, movieId)));
 
       if (result.length === 0) {
         throw new HTTPException(404, { message: "Movie not found" });
       }
-      return c.json({ path: result[0].path });
+
+      const playHistory = await db.query.play_history.findFirst({
+        where: and(
+          eq(play_history.movieId, movieId),
+          eq(play_history.userId, userId!)
+        ),
+      });
+      return c.json({
+        path: result[0].path,
+        progress: playHistory?.progress ?? 0,
+      });
+    }
+  )
+  .post(
+    "/playHistory",
+    zValidator("json", playHistorySchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const userId = c.get("user")?.id;
+      const { movieId, progress, totalTime } = c.req.valid("json");
+
+      const existingHistory = await db.query.play_history.findFirst({
+        where: and(
+          eq(play_history.movieId, movieId),
+          eq(play_history.userId, userId!)
+        ),
+      });
+      if (existingHistory) {
+        await db
+          .update(play_history)
+          .set({ progress, totalTime })
+          .where(eq(play_history.id, existingHistory.id));
+      } else {
+        await db.insert(play_history).values({
+          id: nanoid(),
+          movieId,
+          userId: userId!,
+          progress,
+          totalTime,
+        });
+      }
+      return c.json({ success: true });
     }
   )
   .use(async (c, next) => {
@@ -456,9 +508,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         { jobId: cacheId }
       );
 
-      console.log(
-        `[Backend] 添加新任务: ${originalPath}, Job ID: ${cacheId}`
-      );
+      console.log(`[Backend] 添加新任务: ${originalPath}, Job ID: ${cacheId}`);
       return c.json({
         status: "QUEUED",
         message: "Video processing has started.",
@@ -547,9 +597,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         { jobId: cacheId }
       );
 
-      console.log(
-        `[Backend] 添加新任务: ${originalPath}, Job ID: ${cacheId}`
-      );
+      console.log(`[Backend] 添加新任务: ${originalPath}, Job ID: ${cacheId}`);
       return c.json({
         status: "QUEUED",
         message: "Video processing has started.",

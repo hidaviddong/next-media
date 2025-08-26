@@ -13,11 +13,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useSetAtom } from "jotai";
-import { hasPlayButtonClickAtom, settingsDialogOpenAtom } from "@/lib/store";
+import { settingsDialogOpenAtom } from "@/lib/store";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function AppHeader() {
-  const setHasPlayButtonClick = useSetAtom(hasPlayButtonClickAtom);
   const setSettingsDialogOpen = useSetAtom(settingsDialogOpenAtom);
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -33,7 +32,6 @@ export default function AppHeader() {
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => {
               router.push("/movies");
-              setHasPlayButtonClick(false);
             }}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80">
