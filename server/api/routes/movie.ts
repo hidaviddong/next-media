@@ -321,7 +321,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         const webStream = Readable.toWeb(nodeStream) as any;
 
         signal.onabort = () => {
-          consola.success(
+          console.log(
             `Client disconnected from MP4 stream. Destroying file stream for: ${moviePath}`
           );
           nodeStream.destroy();
@@ -335,7 +335,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         };
         return c.body(webStream, 206, headers);
       } catch (e) {
-        consola.error(e);
+        console.log(e);
         throw new HTTPException(404, { message: "Server Error" });
       }
     }
@@ -371,7 +371,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           c.header("Content-Type", "application/vnd.apple.mpegurl");
           return c.body(modifiedContent, 200);
         } catch (error) {
-          consola.error("Error reading m3u8 file:", error);
+          console.log("Error reading m3u8 file:", error);
           throw new HTTPException(404, { message: "M3U8 file not found" });
         }
       } else if (filename.endsWith(".ts")) {
@@ -384,7 +384,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           c.header("Content-Type", "video/mp2t");
           return c.body(webStream, 200);
         } catch (error) {
-          consola.error("Error reading ts file:", error);
+          console.log("Error reading ts file:", error);
           throw new HTTPException(404, { message: "TS segment not found" });
         }
       } else {
@@ -424,7 +424,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       );
 
       if (completedJob) {
-        consola.success(
+        console.log(
           `[Backend] 转码已经完成: ${originalPath}, Job ID: ${completedJob.id}`
         );
         return c.json({
@@ -436,7 +436,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       }
 
       if (existingJob) {
-        consola.success(
+        console.log(
           `[Backend] 转码进行中: ${originalPath}, Job ID: ${existingJob.id}`
         );
         return c.json({
@@ -456,7 +456,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         { jobId: cacheId }
       );
 
-      consola.success(
+      console.log(
         `[Backend] 添加新任务: ${originalPath}, Job ID: ${cacheId}`
       );
       return c.json({
@@ -515,7 +515,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       );
 
       if (completedJob) {
-        consola.success(
+        console.log(
           `[Backend] 转码已经完成: ${originalPath}, Job ID: ${completedJob.id}`
         );
         return c.json({
@@ -527,7 +527,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       }
 
       if (existingJob) {
-        consola.success(
+        console.log(
           `[Backend] 转码进行中: ${originalPath}, Job ID: ${existingJob.id}`
         );
         return c.json({
@@ -547,7 +547,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         { jobId: cacheId }
       );
 
-      consola.success(
+      console.log(
         `[Backend] 添加新任务: ${originalPath}, Job ID: ${cacheId}`
       );
       return c.json({
@@ -619,7 +619,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           movieInfo,
         });
       } catch (e) {
-        consola.error(e);
+        console.log(e);
         throw new HTTPException(404, { message: "Server Error" });
       }
     }
@@ -696,7 +696,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
 
         const videoFullPath = path.join(moviePath, videoFile);
 
-        consola.success(
+        console.log(
           `Extracting embedded subtitle #${index} from ${videoFullPath}`
         );
 

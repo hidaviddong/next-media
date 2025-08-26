@@ -3,39 +3,84 @@ import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import fs from "fs/promises";
-import { parseMovieFolder } from "@/server/utils";
+import { getDirectorySize, parseMovieFolder } from "@/server/utils";
 import type { Variables } from "../type";
-
+import { checkUser } from "../middleware";
+import { db } from "@/server/drizzle";
+import { and, eq } from "drizzle-orm";
+import { library } from "@/server/drizzle/schema";
 const scanSchema = z.object({
   libraryPath: z.string(),
 });
 
-export const scanRoute = new Hono<{ Variables: Variables }>().post(
-  "/",
-  zValidator("json", scanSchema, (result, c) => {
-    if (!result.success) {
-      throw new HTTPException(400, { message: "Invalid Request" });
-    }
-  }),
-  async (c) => {
-    const { libraryPath } = c.req.valid("json");
-    const scanFolders = [];
-    const entries = await fs.readdir(libraryPath, {
-      withFileTypes: true,
-    });
-    const movieFoldersList = entries
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name);
+const capacitySchema = z.object({
+  libraryPath: z.string(),
+});
 
-    for (const movieFolder of movieFoldersList) {
-      const parsed = parseMovieFolder(movieFolder);
-      if (!parsed) continue;
-      scanFolders.push({
-        folderName: movieFolder,
-        name: parsed.name,
-        year: parsed.year,
+export const scanRoute = new Hono<{ Variables: Variables }>()
+  .use(checkUser)
+  .post(
+    "/",
+    zValidator("json", scanSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const { libraryPath } = c.req.valid("json");
+      const scanFolders = [];
+      const entries = await fs.readdir(libraryPath, {
+        withFileTypes: true,
+      });
+      const movieFoldersList = entries
+        .filter((e) => e.isDirectory())
+        .map((e) => e.name);
+
+      for (const movieFolder of movieFoldersList) {
+        const parsed = parseMovieFolder(movieFolder);
+        if (!parsed) continue;
+        scanFolders.push({
+          folderName: movieFolder,
+          name: parsed.name,
+          year: parsed.year,
+        });
+      }
+      return c.json({ data: scanFolders }, { status: 200 });
+    }
+  )
+  .get(
+    "/capacity",
+    zValidator("query", capacitySchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const userId = c.get("user")?.id;
+      const { libraryPath } = c.req.valid("query");
+
+      const userLibrary = await db.query.library.findFirst({
+        where: and(eq(library.userId, userId!), eq(library.path, libraryPath)),
+      });
+
+      if (!userLibrary) {
+        throw new HTTPException(404, { message: "Library not found" });
+      }
+
+      const checkCacheCapacity = await getDirectorySize(libraryPath);
+      const userLibraryCapacity = userLibrary.maxCacheBytes ?? 0;
+
+      return c.json({
+        capacity:
+          checkCacheCapacity >= userLibraryCapacity
+            ? 100
+            : ((checkCacheCapacity / userLibraryCapacity) * 100).toFixed(1),
+        checkCacheCapacity: (checkCacheCapacity / 1024 / 1024 / 1024).toFixed(
+          1
+        ),
+        userLibraryCapacity: (userLibraryCapacity / 1024 / 1024 / 1024).toFixed(
+          1
+        ),
       });
     }
-    return c.json({ data: scanFolders }, { status: 200 });
-  }
-);
+  );

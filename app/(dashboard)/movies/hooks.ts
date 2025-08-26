@@ -16,6 +16,7 @@ export const KEYS = {
   MOVIE_INFO: ["movieInfo"],
   MOVIE_SUBTITLE_LISTS: ["movieSubtitleLists"],
   USER_LIBRARY: ["userLibrary"],
+  USER_LIBRARY_CAPACITY: ["userLibraryCapacity"],
   MOVIE_PLAY: ["moviePlay"],
   MOVIE_REMUX: ["movieRemux"],
   MOVIE_REMUX_PROGRESS: ["movieRemuxProgress"],
@@ -92,6 +93,9 @@ export function useQueueStatus() {
   if (queueStatusQuery.data?.stats.active === 0) {
     queryClient.invalidateQueries({ queryKey: [...KEYS.MOVIE_LISTS] });
     queryClient.invalidateQueries({ queryKey: [...KEYS.USER_LIBRARY] });
+    queryClient.invalidateQueries({
+      queryKey: [...KEYS.USER_LIBRARY_CAPACITY],
+    });
   }
   return { queueStatusQuery };
 }
@@ -145,6 +149,20 @@ export function useUserLibrary() {
     },
   });
   return { userLibraryQuery };
+}
+
+export function useUserLibraryCapacity(libraryPath: string) {
+  const userLibraryCapacityQuery = useQuery({
+    queryKey: [...KEYS.USER_LIBRARY_CAPACITY],
+    queryFn: async () => {
+      const response = await client.api.scan.capacity.$get({
+        query: { libraryPath },
+      });
+      return response.json();
+    },
+    enabled: !!libraryPath,
+  });
+  return { userLibraryCapacityQuery };
 }
 
 export function useMovieRemux(moviePath: string, movieType?: MovieType) {

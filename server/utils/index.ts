@@ -13,7 +13,7 @@ import { db } from "../drizzle";
 import { TMDB_BASE_URL } from "@/lib/constant";
 import { nanoid } from "nanoid";
 import path from "node:path";
-
+import fs from "node:fs/promises";
 const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN!;
 
 export interface MovieInfo {
@@ -38,6 +38,47 @@ export function parseMovieFolder(folder: string) {
     year = nameMatch[2];
   }
   return { name, year };
+}
+
+export async function getDirectorySize(directoryPath: string) {
+  let totalSize = 0;
+
+  try {
+    // 1. 读取目录中的所有条目（文件和子目录）
+    const dirents = await fs.readdir(directoryPath, { withFileTypes: true });
+
+    // 2. 为每个条目创建一个计算其大小的 Promise
+    const sizePromises = dirents.map(async (dirent) => {
+      const fullPath = path.join(directoryPath, dirent.name);
+
+      // 3. 根据条目类型进行处理
+      if (dirent.isDirectory()) {
+        // 如果是子目录，递归调用自身
+        return await getDirectorySize(fullPath);
+      } else if (dirent.isFile()) {
+        // 如果是文件，获取其大小
+        const stats = await fs.stat(fullPath);
+        return stats.size;
+      } else {
+        return 0;
+      }
+    });
+
+    // 4. 并行等待所有大小计算完成
+    const sizes = await Promise.all(sizePromises);
+
+    // 5. 将所有大小累加起来
+    totalSize = sizes.reduce((acc, size) => acc + size, 0);
+  } catch (err) {
+    // 如果目录本身无法访问，则其大小为 0
+    if (err instanceof Error && err.message !== "ENOENT") {
+      // ENOENT 表示目录不存在，是正常情况
+      console.error(`无法读取目录: ${directoryPath}`, err);
+    }
+    return 0;
+  }
+
+  return totalSize;
 }
 
 function parseTimeToSeconds(timeString: string) {
