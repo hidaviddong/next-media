@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
 import { useMovieStatus } from "../hooks";
 import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
 interface MovieDetailProps {
   movieRecord: Movie;
 }
@@ -160,6 +161,8 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
+                        variant="secondary"
+                        className="flex cursor-pointer"
                         onClick={() => {
                           // 如果没有电影路径
                           if (!movieStatus?.path) {
@@ -168,13 +171,24 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
                           }
                           setPlaying(true);
                         }}
-                        size="lg"
-                        className="w-full sm:w-auto bg-neutral-900 hover:bg-neutral-800 text-white cursor-pointer"
                       >
-                        <Play className="w-5 h-5 mr-2" />
-                        {movieStatus?.progress && movieStatus.progress > 0
-                          ? "Resume"
-                          : "Play"}
+                        <Play className="text-neutral-600" />
+                        {movieStatus?.progressPercentage ? (
+                          <Progress
+                            value={movieStatus?.progressPercentage}
+                            className="w-12"
+                          />
+                        ) : (
+                          <></>
+                        )}
+
+                        {movieStatus?.leftTimeMinutes ? (
+                          <p className="text-sm text-neutral-600">
+                            {movieStatus?.leftTimeMinutes} min
+                          </p>
+                        ) : (
+                          <></>
+                        )}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>

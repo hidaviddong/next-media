@@ -261,9 +261,20 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           eq(play_history.userId, userId!)
         ),
       });
+      const leftTime = playHistory?.totalTime
+        ? playHistory.totalTime - (playHistory.progress ?? 0)
+        : 0;
+
+      const leftTimeMinutes = Math.round(leftTime / 60);
+
       return c.json({
         path: result[0].path,
         progress: playHistory?.progress ?? 0,
+        progressPercentage:
+          playHistory?.progress && playHistory?.totalTime
+            ? Math.round((playHistory.progress / playHistory.totalTime) * 100)
+            : 0,
+        leftTimeMinutes,
       });
     }
   )
