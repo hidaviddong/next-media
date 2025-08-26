@@ -61,7 +61,7 @@ export default function Capacity() {
         </TooltipTrigger>
         <TooltipContent>
           <p>
-            {checkCacheCapacity} GB used of {userLibraryCapacity} GB
+            {checkCacheCapacity} GB cache used of {userLibraryCapacity} GB
           </p>
         </TooltipContent>
       </Tooltip>
