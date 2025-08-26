@@ -4,6 +4,7 @@ import AddFolder from "./add-folder";
 import QueueStatus from "./queue-status";
 import MovieList from "./movie-lists";
 import Capacity from "./capacity";
+import SearchCommand from "./search-command";
 
 export default function MoviesPage() {
   return (
@@ -17,6 +18,7 @@ export default function MoviesPage() {
         <Capacity />
         <AddFolder />
       </div>
+      <SearchCommand />
       <QueueStatus />
       <MovieList />
     </motion.div>

@@ -17,7 +17,7 @@ Next media is a media management system (eg. Jellyfin, Emby, Plex)
 - [x] 浏览器不支持 DTS 音频，需要转换 (转换后有时还是没声音)
 - [x] 支持 m3u8 续传
 - [x] 动态切换播放模式(direct play / remux to mp4 / m3u8)
-- [ ] 全局搜索 cmd+k，回车可以直接跳到电影详情页
+- [x] 全局搜索 cmd+k，回车可以直接跳到电影详情页
 - [ ] 增加播放记录表，记录上次播放时间
   - [ ] 断点续播
   - [ ] 保证缓存大小不超过用户设置容量，删除最早播放的那条缓存
