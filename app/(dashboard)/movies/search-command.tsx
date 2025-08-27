@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calculator, Calendar, Smile } from "lucide-react";
-
 import {
   CommandDialog,
   CommandEmpty,
