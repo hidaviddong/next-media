@@ -53,6 +53,7 @@
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.4",
     "embla-carousel-react": "^8.6.0",
+    "geist": "^1.4.2",
     "hls.js": "^1.6.10",
     "hono": "^4.9.0",
     "input-otp": "^1.4.2",

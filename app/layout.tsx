@@ -1,24 +1,13 @@
 import Providers from "./providers";
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/sonner";
-import { Inter, Outfit } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-  display: "swap",
-});
-
 export const metadata: Metadata = {
-  title: "NextMovie",
-  description: "NextMovie is a modern movie management platform",
+  title: "NextMedia",
+  description: "NextMedia is a modern media management platform",
 };
 
 export default function RootLayout({
@@ -28,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${outfit.variable} antialiased`}>
+      <body className={`${GeistSans.variable} ${GeistMono.variable}`}>
         <Providers>{children}</Providers>
         <Toaster position="top-center" richColors />
       </body>

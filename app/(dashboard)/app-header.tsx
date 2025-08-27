@@ -1,23 +1,19 @@
 "use client";
 
-import { ChevronsUpDown, LogOut, Settings, Film } from "lucide-react";
+import { ChevronsUpDown, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { useSetAtom } from "jotai";
-import { settingsDialogOpenAtom } from "@/lib/store";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function AppHeader() {
-  const setSettingsDialogOpen = useSetAtom(settingsDialogOpenAtom);
   const queryClient = useQueryClient();
   const router = useRouter();
   const { data: session } = authClient.useSession();
@@ -34,11 +30,8 @@ export default function AppHeader() {
               router.push("/movies");
             }}
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80">
-              <Film className="h-4 w-4 text-primary-foreground" />
-            </div>
             <span className="text-xl font-heading font-bold tracking-tight">
-              NextMovie
+              NextMedia
             </span>
           </div>
         </div>
@@ -69,15 +62,6 @@ export default function AppHeader() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem
-                onClick={() => {
-                  setSettingsDialogOpen(true);
-                }}
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={async () => {
                   await authClient.signOut();

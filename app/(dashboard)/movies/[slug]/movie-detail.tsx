@@ -51,7 +51,7 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
               {movieRecord.poster && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="secondary" size="icon" className="size-8">
+                    <Button variant="ghost" size="icon" className="size-8">
                       <MoveLeftIcon />
                     </Button>
                   </TooltipTrigger>
