@@ -91,7 +91,8 @@ export default function MovieInfo({ moviePath }: { moviePath: string }) {
 
       {displayInfo && (
         <TooltipProvider delayDuration={150}>
-          {true && (
+          {/* 无字幕的话，AI无法感知上下文 */}
+          {displayInfo.subtitleCount > 0 && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge
