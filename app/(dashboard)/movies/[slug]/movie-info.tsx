@@ -2,6 +2,7 @@
 import { useMovieInfo } from "../hooks";
 import {
   AudioWaveform,
+  Sparkles,
   Gauge,
   HardDrive,
   Replace,
@@ -149,6 +150,24 @@ export default function MovieInfo({ moviePath }: { moviePath: string }) {
               <Gauge className="w-3.5 h-3.5" />
               <span>{displayInfo.bitrate}</span>
             </div>
+          )}
+
+          {/* 聊天框 */}
+          {true && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="secondary"
+                  className="cursor-default py-1 ml-auto flex items-center gap-1.5 border-violet-200 dark:border-violet-800 bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>AI Chat</span>
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Ask AI about this movie</p>
+              </TooltipContent>
+            </Tooltip>
           )}
         </TooltipProvider>
       )}

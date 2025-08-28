@@ -18,6 +18,7 @@ import { getDirname, getSubtitleSrc } from "@/lib/utils";
 import { MovieProgress } from "./movie-progress";
 import { useQueryState } from "nuqs";
 import type { MovieStatusResponseType } from "@/lib/types";
+import MovieChat from "./movie-chat";
 
 export default function MoviePlayer({
   movieStatus,
@@ -254,7 +255,6 @@ export default function MoviePlayer({
           Your browser does not support the video tag.
         </video>
       </div>
-
       <MovieInfo moviePath={movieStatus.path} />
     </div>
   );
