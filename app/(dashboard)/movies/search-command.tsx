@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMovieLists } from "./hooks";
 import { useRouter } from "next/navigation";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function SearchCommand() {
   const { movieListsQuery } = useMovieLists();
@@ -70,8 +72,21 @@ export default function SearchCommand() {
                 <AvatarFallback>
                   {movie.movie.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
+
+                {movie.isWatched && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
               </Avatar>
-              <span>{movie.movie.name}</span>
+              <span
+                className={cn(
+                  "truncate",
+                  movie.isWatched && "text-neutral-500"
+                )}
+              >
+                {movie.movie.name}
+              </span>
             </CommandItem>
           ))}
         </CommandGroup>

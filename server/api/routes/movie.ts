@@ -39,6 +39,12 @@ const movieStatusSchema = z.object({
   movieId: z.string(),
 });
 
+const watchedSchema = z.object({
+  movieId: z.string(),
+  libraryId: z.string(),
+  isWatched: z.boolean(),
+});
+
 const directPlaySchema = z.object({
   moviePath: z.string(),
 });
@@ -91,6 +97,8 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       .select({
         movie: movie,
         path: library_movies.path,
+        isWatched: library_movies.isWatched,
+        libraryId: library.id,
       })
       .from(library)
       .where(eq(library.userId, userId!))
@@ -334,6 +342,27 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       const userId = c.get("user")?.id;
       const { movieId, libraryId } = c.req.valid("json");
       await updateCacheItem({ userId: userId!, movieId, libraryId });
+      return c.json({ success: true });
+    }
+  )
+  .post(
+    "/watched",
+    zValidator("json", watchedSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const { libraryId, movieId, isWatched } = c.req.valid("json");
+      await db
+        .update(library_movies)
+        .set({ isWatched })
+        .where(
+          and(
+            eq(library_movies.libraryId, libraryId),
+            eq(library_movies.movieId, movieId)
+          )
+        );
       return c.json({ success: true });
     }
   )

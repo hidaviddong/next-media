@@ -6,6 +6,7 @@ import {
   MovieType,
   PlayHistoryRequestType,
   UpdateCacheItemRequestType,
+  MovieWatchedRequestType,
 } from "@/lib/types";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -273,4 +274,20 @@ export function useUpdateCacheItem() {
     },
   });
   return { updateCacheItemMutation };
+}
+
+export function useMovieWatched() {
+  const queryClient = useQueryClient();
+  const movieWatchedMutation = useMutation({
+    mutationFn: async (body: MovieWatchedRequestType) => {
+      const response = await client.api.movie.watched.$post({
+        json: body,
+      });
+      return response.json();
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: KEYS.MOVIE_LISTS });
+    },
+  });
+  return { movieWatchedMutation };
 }

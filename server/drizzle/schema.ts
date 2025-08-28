@@ -111,6 +111,7 @@ export const library_movies = sqliteTable(
       .notNull()
       .references(() => movie.id, { onDelete: "cascade" }),
     path: text("path").notNull(),
+    isWatched: integer("is_watched", { mode: "boolean" }).default(false),
   },
   (t) => [primaryKey({ columns: [t.libraryId, t.movieId] })]
 );

@@ -58,6 +58,10 @@ export type UpdateCacheItemRequestType = InferRequestType<
   typeof client.api.movie.updateCacheItem.$post
 >["json"];
 
+export type MovieWatchedRequestType = InferRequestType<
+  typeof client.api.movie.watched.$post
+>["json"];
+
 export type MovieType = MovieInfoResponseType["type"];
 
 // infer drizzle orm type
