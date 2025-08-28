@@ -2,7 +2,6 @@
 import { useMovieInfo } from "../hooks";
 import {
   AudioWaveform,
-  Sparkles,
   Gauge,
   HardDrive,
   Replace,
@@ -19,6 +18,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatBitrate, formatSize } from "@/lib/utils";
+
+import MovieChat from "./movie-chat";
 
 const playbackTypeConfig = {
   direct: {
@@ -92,22 +93,7 @@ export default function MovieInfo({ moviePath }: { moviePath: string }) {
       {displayInfo && (
         <TooltipProvider delayDuration={150}>
           {/* 无字幕的话，AI无法感知上下文 */}
-          {displayInfo.subtitleCount > 0 && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant="secondary"
-                  className="cursor-default py-1 flex items-center gap-1.5 border-violet-200 dark:border-violet-800 bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>AI Chat</span>
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Ask AI about this movie</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
+          {displayInfo.subtitleCount > 0 && <MovieChat />}
 
           {currentTypeInfo && (
             <Tooltip>
