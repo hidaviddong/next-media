@@ -9,6 +9,7 @@ import {
   ServerCog,
   Video,
   Zap,
+  Captions,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -58,6 +59,7 @@ export default function MovieInfo({ moviePath }: { moviePath: string }) {
   const { format, streams } = movieInfo;
   const videoStream = streams.find((s) => s.codec_type === "video");
   const audioStream = streams.find((s) => s.codec_type === "audio");
+  const subtitleStreams = streams.filter((s) => s.codec_type === "subtitle");
   const displayInfo = {
     size: format.size ? formatSize(format.size) : null,
     bitrate: format.bit_rate ? formatBitrate(format.bit_rate) : null,
@@ -72,6 +74,12 @@ export default function MovieInfo({ moviePath }: { moviePath: string }) {
     // 音频信息
     audioCodec: audioStream ? audioStream.codec_name?.toUpperCase() : null,
     audioChannels: audioStream ? `${audioStream.channels}ch` : null,
+
+    // 字幕信息
+    subtitleCount: subtitleStreams.length,
+    subtitleLanguages: subtitleStreams
+      .map((s) => s.tags?.title || s.tags?.language?.toUpperCase())
+      .filter(Boolean) as string[],
   };
 
   const isMovieInfoLoading = movieInfoQuery.isLoading;
@@ -83,6 +91,23 @@ export default function MovieInfo({ moviePath }: { moviePath: string }) {
 
       {displayInfo && (
         <TooltipProvider delayDuration={150}>
+          {true && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="secondary"
+                  className="cursor-default py-1 flex items-center gap-1.5 border-violet-200 dark:border-violet-800 bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>AI Chat</span>
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Ask AI about this movie</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {currentTypeInfo && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -119,6 +144,20 @@ export default function MovieInfo({ moviePath }: { moviePath: string }) {
             </Badge>
           )}
 
+          {/* 字幕 */}
+          {displayInfo.subtitleCount > 0 && (
+            <Badge variant="outline" className="flex items-center gap-1.5 py-1">
+              <Captions className="w-3.5 h-3.5" />
+              <span>
+                {displayInfo.subtitleLanguages.length > 0
+                  ? `${displayInfo.subtitleLanguages.join(", ")}`
+                  : `${displayInfo.subtitleCount} Subtitle${
+                      displayInfo.subtitleCount > 1 ? "s" : ""
+                    }`}
+              </span>
+            </Badge>
+          )}
+
           {/* 视频编码和容器 */}
           {displayInfo.videoCodec && (
             <Tooltip>
@@ -150,24 +189,6 @@ export default function MovieInfo({ moviePath }: { moviePath: string }) {
               <Gauge className="w-3.5 h-3.5" />
               <span>{displayInfo.bitrate}</span>
             </div>
-          )}
-
-          {/* 聊天框 */}
-          {true && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant="secondary"
-                  className="cursor-default py-1 ml-auto flex items-center gap-1.5 border-violet-200 dark:border-violet-800 bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>AI Chat</span>
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Ask AI about this movie</p>
-              </TooltipContent>
-            </Tooltip>
           )}
         </TooltipProvider>
       )}
