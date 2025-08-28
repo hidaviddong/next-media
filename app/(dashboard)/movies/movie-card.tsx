@@ -4,43 +4,27 @@ import { motion } from "motion/react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
 import type { MovieListsResponseType } from "@/lib/types";
+import { Check, MoreVertical, Eye } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 
 interface MovieCardProps {
   movie: MovieListsResponseType[number];
 }
 
 export function MovieCard(props: MovieCardProps) {
+  const [isWatched, setIsWatched] = useState(false);
   const movie = props.movie.movie;
-  if (!movie.poster) {
-    return (
-      <motion.div
-        className="group block"
-        layoutId={`movie-${movie.tmdbId}`}
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      >
-        <AspectRatio
-          ratio={2 / 3}
-          className="flex items-center justify-center rounded-lg bg-neutral-800"
-        >
-          <span className="text-sm text-neutral-400">No Image</span>
-        </AspectRatio>
-        <motion.h3
-          className="mt-2 text-sm font-medium text-neutral-300 truncate"
-          layoutId={`title-${movie.tmdbId}`}
-        >
-          {movie.name}
-        </motion.h3>
-      </motion.div>
-    );
-  }
 
   return (
     <Link href={`/movies/${movie.tmdbId}`} className="group block space-y-2">
       <motion.div
-        className="overflow-hidden rounded-lg"
+        className="overflow-hidden rounded-lg relative"
         layoutId={`movie-${movie.tmdbId}`}
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -59,6 +43,29 @@ export function MovieCard(props: MovieCardProps) {
             className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
           />
         </AspectRatio>
+        {isWatched && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <Check className="w-8 h-8 text-white" />
+          </div>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-full bg-black/50 hover:bg-black/70 text-white z-10">
+              <MoreVertical className="w-4 h-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsWatched(!isWatched);
+              }}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Mark as watched
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </motion.div>
       <motion.h3
         className="text-sm text-center font-medium text-neutral-700 truncate pt-1"
