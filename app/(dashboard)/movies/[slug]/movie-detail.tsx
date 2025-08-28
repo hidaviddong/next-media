@@ -17,6 +17,7 @@ import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
 import { useMovieStatus, useUpdateCacheItem, useUserLibrary } from "../hooks";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { useQueryClient } from "@tanstack/react-query";
 interface MovieDetailProps {
   movieRecord: Movie;
 }
@@ -27,6 +28,7 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
     parseAsBoolean.withDefault(false)
   );
 
+  const queryClient = useQueryClient();
   const { updateCacheItemMutation } = useUpdateCacheItem();
   const { movieStatusQuery } = useMovieStatus(movieRecord.id);
   const movieStatus = movieStatusQuery.data;
@@ -172,6 +174,7 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
                             toast.error("Movie path not found");
                             return;
                           }
+                          queryClient.invalidateQueries();
                           updateCacheItemMutation.mutate(
                             {
                               movieId: movieRecord.id,

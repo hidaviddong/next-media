@@ -189,7 +189,7 @@ export function useMovieRemux(
 
 export function useMovieRemuxProgress(jobId: string, moviePath: string) {
   const movieRemuxProgressQuery = useQuery({
-    queryKey: [...KEYS.MOVIE_REMUX_PROGRESS, jobId],
+    queryKey: [...KEYS.MOVIE_REMUX_PROGRESS, jobId, moviePath],
     queryFn: async () => {
       const response = await client.api.movie.remuxProgress.$get({
         query: { jobId, moviePath },
@@ -264,18 +264,12 @@ export function useMoviePlayHistory() {
 }
 
 export function useUpdateCacheItem() {
-  const queryClient = useQueryClient();
   const updateCacheItemMutation = useMutation({
     mutationFn: async (body: UpdateCacheItemRequestType) => {
       const response = await client.api.movie.updateCacheItem.$post({
         json: body,
       });
       return response.json();
-    },
-    onSuccess: () => {
-      // 这里需要重新查询remux状态，因为可能原来remux之后的文件已经被LRU删除了
-      queryClient.invalidateQueries({ queryKey: KEYS.MOVIE_REMUX });
-      queryClient.invalidateQueries({ queryKey: KEYS.USER_LIBRARY_CAPACITY });
     },
   });
   return { updateCacheItemMutation };
