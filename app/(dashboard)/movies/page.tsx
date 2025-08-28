@@ -3,7 +3,6 @@ import { motion } from "motion/react";
 import AddFolder from "./add-folder";
 import QueueStatus from "./queue-status";
 import MovieList from "./movie-lists";
-import Capacity from "./capacity";
 import SearchCommand from "./search-command";
 
 export default function MoviesPage() {
@@ -14,10 +13,7 @@ export default function MoviesPage() {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="flex flex-col gap-4"
     >
-      <div className="flex items-center justify-center gap-2">
-        <Capacity />
-        <AddFolder />
-      </div>
+      <AddFolder />
       <SearchCommand />
       <QueueStatus />
       <MovieList />

@@ -131,3 +131,25 @@ export const play_history = sqliteTable("play_history", {
     .$defaultFn(() => new Date())
     .notNull(),
 });
+
+export const cache_item = sqliteTable("cache_item", {
+  id: text("id").primaryKey(),
+  inputPath: text("input_path").notNull().unique(),
+  outputPath: text("output_path").notNull().unique(),
+  bytes: integer("bytes", { mode: "number" }).notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  libraryId: text("library_id")
+    .notNull()
+    .references(() => library.id, { onDelete: "cascade" }),
+  movieId: text("movie_id")
+    .notNull()
+    .references(() => movie.id, { onDelete: "cascade" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  lastAccessedAt: integer("last_accessed_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});

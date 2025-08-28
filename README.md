@@ -20,8 +20,8 @@ Next media is a media management system (eg. Jellyfin, Emby, Plex)
 - [x] 全局搜索 cmd+k，回车可以直接跳到电影详情页
 - [x] 增加播放记录表，记录上次播放时间
   - [x] 断点续播
+  - [x] 保证缓存大小不超过用户设置容量，如果要超过了删除最早播放的那条缓存
   - [ ] 标记为已观看
-  - [ ] 保证缓存大小不超过用户设置容量，如果要超过了删除最早播放的那条缓存
 
 - [ ] AI
   - [ ] AI Summary 

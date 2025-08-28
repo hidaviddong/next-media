@@ -14,7 +14,7 @@ import MoviePlayer from "./movie-player";
 import type { Movie } from "@/lib/types";
 import { AnimatePresence, motion } from "motion/react";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
-import { useMovieStatus } from "../hooks";
+import { useMovieStatus, useUpdateCacheItem, useUserLibrary } from "../hooks";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 interface MovieDetailProps {
@@ -27,8 +27,11 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
     parseAsBoolean.withDefault(false)
   );
 
+  const { updateCacheItemMutation } = useUpdateCacheItem();
   const { movieStatusQuery } = useMovieStatus(movieRecord.id);
   const movieStatus = movieStatusQuery.data;
+  const { userLibraryQuery } = useUserLibrary();
+  const libraryId = userLibraryQuery.data?.userLibrary?.id ?? "";
 
   return (
     <div className="py-8">
@@ -169,7 +172,17 @@ export function MovieDetail({ movieRecord }: MovieDetailProps) {
                             toast.error("Movie path not found");
                             return;
                           }
-                          setPlaying(true);
+                          updateCacheItemMutation.mutate(
+                            {
+                              movieId: movieRecord.id,
+                              libraryId,
+                            },
+                            {
+                              onSuccess: () => {
+                                setPlaying(true);
+                              },
+                            }
+                          );
                         }}
                       >
                         <Play className="text-neutral-600" />

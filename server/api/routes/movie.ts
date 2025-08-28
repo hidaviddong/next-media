@@ -19,6 +19,7 @@ import { Readable } from "node:stream";
 import path from "node:path";
 import { getMovieInfo, SubtitleTrackInfo } from "@/server/utils";
 import { spawn } from "node:child_process";
+import { updateCacheItem } from "@/server/redis/lru";
 
 type MovieType = "direct" | "remux" | "hls";
 
@@ -42,7 +43,12 @@ const directPlaySchema = z.object({
   moviePath: z.string(),
 });
 
-const remuxSchema = directPlaySchema.clone();
+const remuxSchema = z.object({
+  moviePath: z.string(),
+  libraryId: z.string(),
+  movieId: z.string(),
+});
+
 const movieInfoSchema = directPlaySchema.clone();
 const subtitleListsSchema = directPlaySchema.clone();
 const hlsPlaySchema = z.object({
@@ -64,6 +70,11 @@ const playHistorySchema = z.object({
   movieId: z.string(),
   progress: z.number(),
   totalTime: z.number(),
+});
+
+const updateCacheItemSchema = z.object({
+  movieId: z.string(),
+  libraryId: z.string(),
 });
 
 export const movieRoute = new Hono<{ Variables: Variables }>()
@@ -312,6 +323,20 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       return c.json({ success: true });
     }
   )
+  .post(
+    "/updateCacheItem",
+    zValidator("json", updateCacheItemSchema, (result, c) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const userId = c.get("user")?.id;
+      const { movieId, libraryId } = c.req.valid("json");
+      await updateCacheItem({ userId: userId!, movieId, libraryId });
+      return c.json({ success: true });
+    }
+  )
   .use(async (c, next) => {
     const userId = c.get("user")?.id;
     let moviePath = c.req.query("moviePath");
@@ -463,7 +488,8 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       }
     }),
     async (c) => {
-      const { moviePath } = c.req.valid("query");
+      const userId = c.get("user")?.id;
+      const { moviePath, libraryId, movieId } = c.req.valid("query");
       const files = await fs.readdir(moviePath);
       const videoFile = files.find((f) => f.endsWith(".mkv"));
       if (!videoFile) {
@@ -510,11 +536,31 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         });
       }
 
+      const userLibrary = await db.query.library.findFirst({
+        where: and(eq(library.userId, userId!), eq(library.id, libraryId)),
+      });
+
+      const fileSize = await fs.stat(originalPath);
+
+      // 只对第一次转码进行缓存空间检查
+
+      if (
+        userLibrary?.maxCacheBytes &&
+        fileSize.size > userLibrary?.maxCacheBytes
+      ) {
+        throw new HTTPException(400, {
+          message: "The current file size exceeds the cache size",
+        });
+      }
+
       await remuxToMp4Queue.add(
         "remux-to-mp4",
         {
           inputPath: originalPath,
           outputPath: cachedFilePath,
+          libraryId,
+          userId,
+          movieId,
         },
         { jobId: cacheId }
       );
@@ -553,7 +599,8 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
       }
     }),
     async (c) => {
-      const { moviePath } = c.req.valid("query");
+      const userId = c.get("user")?.id;
+      const { moviePath, libraryId, movieId } = c.req.valid("query");
       const files = await fs.readdir(moviePath);
       const videoFile = files.find((f) => f.endsWith(".mkv"));
       if (!videoFile) {
@@ -599,11 +646,31 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         });
       }
 
+      const userLibrary = await db.query.library.findFirst({
+        where: and(eq(library.userId, userId!), eq(library.id, libraryId)),
+      });
+
+      const fileSize = await fs.stat(originalPath);
+
+      // 只对第一次转码进行缓存空间检查
+
+      if (
+        userLibrary?.maxCacheBytes &&
+        fileSize.size > userLibrary?.maxCacheBytes
+      ) {
+        throw new HTTPException(400, {
+          message: "The current file size exceeds the cache size",
+        });
+      }
+
       await hlsQueue.add(
         "hls",
         {
           inputPath: originalPath,
           outputPath: CACHE_DIR,
+          libraryId,
+          userId,
+          movieId,
         },
         { jobId: cacheId }
       );

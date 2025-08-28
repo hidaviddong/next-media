@@ -10,6 +10,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Capacity from "./capacity";
 
 export default function AddFolder() {
   const setAddFolderDialogOpen = useSetAtom(addFolderDialogOpenAtom);
@@ -21,7 +22,8 @@ export default function AddFolder() {
   return (
     <>
       {userLibraryQuery.data?.userLibrary ? (
-        <>
+        <div className="flex items-center justify-end gap-2">
+          <Capacity />
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -60,16 +62,16 @@ export default function AddFolder() {
               <p>Refresh</p>
             </TooltipContent>
           </Tooltip>
-        </>
+        </div>
       ) : (
-        <>
+        <div className="flex items-center justify-end gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 onClick={() => setAddFolderDialogOpen(true)}
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -77,7 +79,7 @@ export default function AddFolder() {
             </TooltipContent>
           </Tooltip>
           <AddFolderDialog />
-        </>
+        </div>
       )}
     </>
   );

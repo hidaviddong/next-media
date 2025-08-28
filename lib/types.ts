@@ -54,6 +54,10 @@ export type PlayHistoryResponseType = InferResponseType<
   typeof client.api.movie.playHistory.$post
 >;
 
+export type UpdateCacheItemRequestType = InferRequestType<
+  typeof client.api.movie.updateCacheItem.$post
+>["json"];
+
 export type MovieType = MovieInfoResponseType["type"];
 
 // infer drizzle orm type
@@ -90,9 +94,15 @@ export interface TmdbMovieResponse {
 export interface RemuxToMp4Job {
   inputPath: string;
   outputPath: string;
+  libraryId: string;
+  userId: string;
+  movieId: string;
 }
 
 export interface HlsJob {
   inputPath: string;
   outputPath: string;
+  libraryId: string;
+  userId: string;
+  movieId: string;
 }

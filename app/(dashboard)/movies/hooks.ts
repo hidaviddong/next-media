@@ -5,6 +5,7 @@ import {
   type QueueMoviesRequestType,
   MovieType,
   PlayHistoryRequestType,
+  UpdateCacheItemRequestType,
 } from "@/lib/types";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -167,12 +168,17 @@ export function useUserLibraryCapacity(libraryPath: string) {
   return { userLibraryCapacityQuery };
 }
 
-export function useMovieRemux(moviePath: string, movieType?: MovieType) {
+export function useMovieRemux(
+  moviePath: string,
+  libraryId: string,
+  movieId: string,
+  movieType?: MovieType
+) {
   const movieRemuxQuery = useQuery({
     queryKey: [...KEYS.MOVIE_REMUX, moviePath],
     queryFn: async () => {
       const response = await client.api.movie.remux.$get({
-        query: { moviePath },
+        query: { moviePath, libraryId, movieId },
       });
       return response.json();
     },
@@ -188,6 +194,10 @@ export function useMovieRemuxProgress(jobId: string, moviePath: string) {
       const response = await client.api.movie.remuxProgress.$get({
         query: { jobId, moviePath },
       });
+      if (!response.ok) {
+        const errorData = await response.text();
+        toast.error(errorData);
+      }
       return response.json();
     },
     refetchInterval: (query) => {
@@ -198,13 +208,22 @@ export function useMovieRemuxProgress(jobId: string, moviePath: string) {
   return { movieRemuxProgressQuery };
 }
 
-export function useMovieHls(moviePath: string, movieType?: MovieType) {
+export function useMovieHls(
+  moviePath: string,
+  libraryId: string,
+  movieId: string,
+  movieType?: MovieType
+) {
   const movieHlsQuery = useQuery({
     queryKey: [...KEYS.MOVIE_HLS, moviePath],
     queryFn: async () => {
       const response = await client.api.movie.hls.$get({
-        query: { moviePath },
+        query: { moviePath, libraryId, movieId },
       });
+      if (!response.ok) {
+        const errorData = await response.text();
+        toast.error(errorData);
+      }
       return response.json();
     },
     enabled: movieType === "hls",
@@ -242,4 +261,22 @@ export function useMoviePlayHistory() {
     },
   });
   return { moviePlayHistoryMutation };
+}
+
+export function useUpdateCacheItem() {
+  const queryClient = useQueryClient();
+  const updateCacheItemMutation = useMutation({
+    mutationFn: async (body: UpdateCacheItemRequestType) => {
+      const response = await client.api.movie.updateCacheItem.$post({
+        json: body,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      // 这里需要重新查询remux状态，因为可能原来remux之后的文件已经被LRU删除了
+      queryClient.invalidateQueries({ queryKey: KEYS.MOVIE_REMUX });
+      queryClient.invalidateQueries({ queryKey: KEYS.USER_LIBRARY_CAPACITY });
+    },
+  });
+  return { updateCacheItemMutation };
 }

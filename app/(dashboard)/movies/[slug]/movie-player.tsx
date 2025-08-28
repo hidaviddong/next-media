@@ -11,6 +11,7 @@ import {
   useMovieHls,
   useMovieHlsProgress,
   useMoviePlayHistory,
+  useUserLibrary,
 } from "../hooks";
 import { useEffect, useRef } from "react";
 import { getDirname, getSubtitleSrc } from "@/lib/utils";
@@ -27,6 +28,9 @@ export default function MoviePlayer({
   posterPath: string;
   movieId: string;
 }) {
+  const { userLibraryQuery } = useUserLibrary();
+  const libraryId = userLibraryQuery.data?.userLibrary?.id ?? "";
+
   const userAgent = navigator.userAgent;
   const isSafari =
     userAgent.includes("Safari") && !userAgent.includes("Chrome");
@@ -40,7 +44,12 @@ export default function MoviePlayer({
   const { movieSubtitleListsQuery } = useMovieSubtitleLists(movieStatus.path);
   const movieSubtitleLists = movieSubtitleListsQuery.data;
   // remux
-  const { movieRemuxQuery } = useMovieRemux(movieStatus.path, movieType);
+  const { movieRemuxQuery } = useMovieRemux(
+    movieStatus.path,
+    libraryId,
+    movieId,
+    movieType
+  );
   const remuxJobId = movieRemuxQuery.data?.jobId;
   const { movieRemuxProgressQuery } = useMovieRemuxProgress(
     remuxJobId,
@@ -50,7 +59,12 @@ export default function MoviePlayer({
   const remuxOutputPath = movieRemuxQuery.data?.outputPath;
 
   // hls
-  const { movieHlsQuery } = useMovieHls(movieStatus.path, movieType);
+  const { movieHlsQuery } = useMovieHls(
+    movieStatus.path,
+    libraryId,
+    movieId,
+    movieType
+  );
   const hlsJobId = movieHlsQuery.data?.jobId;
   const { movieHlsProgressQuery } = useMovieHlsProgress(
     hlsJobId,

@@ -3,12 +3,12 @@ import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import fs from "fs/promises";
-import { getDirectorySize, parseMovieFolder } from "@/server/utils";
+import { parseMovieFolder } from "@/server/utils";
 import type { Variables } from "../type";
 import { checkUser } from "../middleware";
 import { db } from "@/server/drizzle";
 import { and, eq } from "drizzle-orm";
-import { library } from "@/server/drizzle/schema";
+import { cache_item, library } from "@/server/drizzle/schema";
 const scanSchema = z.object({
   libraryPath: z.string(),
 });
@@ -67,7 +67,15 @@ export const scanRoute = new Hono<{ Variables: Variables }>()
         throw new HTTPException(404, { message: "Library not found" });
       }
 
-      const checkCacheCapacity = await getDirectorySize(libraryPath);
+      const cacheItems = await db.query.cache_item.findMany({
+        where: eq(cache_item.libraryId, userLibrary.id),
+      });
+
+      const checkCacheCapacity = cacheItems.reduce(
+        (acc, item) => acc + item.bytes,
+        0
+      );
+
       const userLibraryCapacity = userLibrary.maxCacheBytes ?? 0;
 
       return c.json({

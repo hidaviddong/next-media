@@ -13,6 +13,7 @@ import { TMDB_BASE_URL } from "@/lib/constant";
 import { nanoid } from "nanoid";
 import path from "node:path";
 import fs from "node:fs/promises";
+import { addCacheItem, ensureCacheSpace } from "../redis/lru";
 const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN!;
 
 export interface MovieInfo {
@@ -197,78 +198,107 @@ export const tmdbApiRequest = async (job: Job<TmdbApiRequestJob>) => {
 };
 
 export const remuxToMp4 = async (job: Job<RemuxToMp4Job>) => {
-  const { inputPath, outputPath } = job.data;
+  const { inputPath, outputPath, libraryId, movieId, userId } = job.data;
   console.log(`[Worker] 开始转码: ${inputPath}`);
 
-  const movieInfo = await getMovieInfo(inputPath);
-  const totalDurationString = movieInfo.format.duration;
-  const totalDurationInSeconds = parseFloat(totalDurationString);
-
-  const ffmpegArgs: string[] = [
-    "-i",
-    inputPath,
-    "-c",
-    "copy",
-    "-sn",
-    outputPath,
-  ];
-
   try {
+    const stats = await fs.stat(inputPath);
+    const estimatedCacheSize = stats.size;
+    console.log("源文件大小是", estimatedCacheSize);
+    await ensureCacheSpace({ libraryId, estimatedCacheSize, userId });
+    const movieInfo = await getMovieInfo(inputPath);
+    const totalDurationString = movieInfo.format.duration;
+    const totalDurationInSeconds = parseFloat(totalDurationString);
+
+    const ffmpegArgs: string[] = [
+      "-i",
+      inputPath,
+      "-c",
+      "copy",
+      "-sn",
+      outputPath,
+    ];
     await executeFFmpeg(ffmpegArgs, job, totalDurationInSeconds);
+    const finalStats = await fs.stat(outputPath);
+    console.log("转码后文件大小是", finalStats.size);
+    await addCacheItem({
+      libraryId,
+      userId,
+      movieId,
+      inputPath,
+      outputPath,
+      bytes: finalStats.size,
+    });
   } catch (e) {
     throw e;
   }
 };
 
 export const hls = async (job: Job<HlsJob>) => {
-  const { inputPath, outputPath } = job.data;
-  const tsFilename = path.join(outputPath, "segment%03d.ts");
-  const m3u8Path = path.join(outputPath, "output.m3u8");
-  console.log(`[Worker] 开始转码为m3u8: ${inputPath}`);
-  const movieInfo = await getMovieInfo(inputPath);
-  const totalDurationString = movieInfo.format.duration;
-  const totalDurationInSeconds = parseFloat(totalDurationString);
+  const { inputPath, outputPath, libraryId, userId, movieId } = job.data;
 
-  const ffmpegArgs = [
-    "-y",
-    "-i",
-    inputPath,
-
-    "-map",
-    "0:v:0",
-    "-map",
-    "0:a:0",
-
-    "-c:v",
-    "copy",
-
-    // 濾鏡
-    "-af",
-    "pan=stereo",
-
-    // Encoder 及其參數
-    "-c:a",
-    "aac",
-    "-ar",
-    "48000",
-    "-b:a",
-    "192k",
-    "-strict",
-    "-2",
-
-    "-sn",
-    "-f",
-    "hls",
-    "-hls_time",
-    "4",
-    "-hls_list_size",
-    "0",
-    "-hls_segment_filename",
-    tsFilename,
-    m3u8Path,
-  ];
   try {
+    const tsFilename = path.join(outputPath, "segment%03d.ts");
+    const m3u8Path = path.join(outputPath, "output.m3u8");
+    console.log(`[Worker] 开始转码为m3u8: ${inputPath}`);
+    const movieInfo = await getMovieInfo(inputPath);
+    const totalDurationString = movieInfo.format.duration;
+    const totalDurationInSeconds = parseFloat(totalDurationString);
+
+    const ffmpegArgs = [
+      "-y",
+      "-i",
+      inputPath,
+
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a:0",
+
+      "-c:v",
+      "copy",
+
+      // 濾鏡
+      "-af",
+      "pan=stereo",
+
+      // Encoder 及其參數
+      "-c:a",
+      "aac",
+      "-ar",
+      "48000",
+      "-b:a",
+      "192k",
+      "-strict",
+      "-2",
+
+      "-sn",
+      "-f",
+      "hls",
+      "-hls_time",
+      "4",
+      "-hls_list_size",
+      "0",
+      "-hls_segment_filename",
+      tsFilename,
+      m3u8Path,
+    ];
+
+    const stats = await fs.stat(inputPath);
+    const estimatedCacheSize = stats.size;
+    console.log("HLS影片源文件大小是", estimatedCacheSize);
+    await ensureCacheSpace({ libraryId, estimatedCacheSize, userId });
     await executeFFmpeg(ffmpegArgs, job, totalDurationInSeconds);
+    const finalStats = await getDirectorySize(outputPath);
+    console.log("hls文件夹大小是", finalStats);
+    await addCacheItem({
+      libraryId,
+      userId,
+      movieId,
+      inputPath,
+      outputPath,
+      bytes: finalStats,
+    });
   } catch (e) {
     throw e;
   }
