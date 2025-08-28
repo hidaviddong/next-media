@@ -22,7 +22,7 @@ Next media is a media management system (eg. Jellyfin, Emby, Plex)
 
   - [x] 断点续播
   - [x] 保证缓存大小不超过用户设置容量，如果要超过了删除最早播放的那条缓存
-  - [ ] 标记为已观看
+  - [x] 标记为已观看
 
 - [ ] AI
   - [ ] AI Summary
