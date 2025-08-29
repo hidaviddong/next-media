@@ -1,5 +1,5 @@
 "use client";
-import { useMovieInfo } from "../hooks";
+import { useMovieInfo, useMovieLists } from "../hooks";
 import {
   AudioWaveform,
   Gauge,
@@ -18,7 +18,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatBitrate, formatSize } from "@/lib/utils";
-
 import MovieChat from "./movie-chat";
 
 const playbackTypeConfig = {
@@ -46,7 +45,17 @@ const playbackTypeConfig = {
   },
 };
 
-export default function MovieInfo({ moviePath }: { moviePath: string }) {
+export default function MovieInfo({
+  moviePath,
+  videoRef,
+}: {
+  moviePath: string;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+}) {
+  const { movieListsQuery } = useMovieLists();
+  const currentMovie = movieListsQuery.data?.find(
+    (m) => m.path === moviePath
+  )?.movie;
   const { movieInfoQuery } = useMovieInfo(moviePath);
   const movieType = movieInfoQuery.data?.type;
 
@@ -93,7 +102,18 @@ export default function MovieInfo({ moviePath }: { moviePath: string }) {
       {displayInfo && (
         <TooltipProvider delayDuration={150}>
           {/* 无字幕的话，AI无法感知上下文 */}
-          {displayInfo.subtitleCount > 0 && <MovieChat />}
+          {displayInfo.subtitleCount > 0 && (
+            <MovieChat
+              movieContext={{
+                name: currentMovie?.name ?? "",
+                overview: currentMovie?.overview ?? "",
+                subtitleIndex: subtitleStreams[0].index, // 默认用第一条字幕索引
+                timestamp: 0, // 传一个默认值
+                movieFolderPath: moviePath,
+              }}
+              videoRef={videoRef}
+            />
+          )}
 
           {currentTypeInfo && (
             <Tooltip>

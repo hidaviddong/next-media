@@ -26,5 +26,4 @@ Next media is a media management system (eg. Jellyfin, Emby, Plex)
 
 - [x] AI
   - [x] movie chat
-    - [ ] (subtitle as prompt context) 拿到当前时间戳 和 movieInfo 后端 写 prompt 模板进行回复
-    - [ ] 后端
+    - [x] (subtitle as prompt context) 拿到当前时间戳 和 movieInfo 后端 写 prompt 模板进行回复

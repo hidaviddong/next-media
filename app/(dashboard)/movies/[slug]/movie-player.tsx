@@ -17,8 +17,10 @@ import { useEffect, useRef } from "react";
 import { getDirname, getSubtitleSrc } from "@/lib/utils";
 import { MovieProgress } from "./movie-progress";
 import { useQueryState } from "nuqs";
-import type { MovieStatusResponseType } from "@/lib/types";
-import MovieChat from "./movie-chat";
+import type {
+  MovieStatusResponseType,
+  PlayHistoryRequestType,
+} from "@/lib/types";
 
 export default function MoviePlayer({
   movieStatus,
@@ -91,6 +93,41 @@ export default function MoviePlayer({
       }
     }
   }, [playing]);
+
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement || !movieId) return;
+
+    const reportUrl = "/api/movie/playHistory";
+
+    const saveHistoryWithBeacon = () => {
+      if (
+        !isNaN(videoElement.duration) &&
+        videoElement.duration > 0 &&
+        videoElement.currentTime > 0
+      ) {
+        const payload: PlayHistoryRequestType = {
+          movieId,
+          progress: videoElement.currentTime,
+          totalTime: videoElement.duration,
+        };
+
+        // sendBeacon 的 payload 必须是 Blob, BufferSource, FormData 或 URLSearchParams。
+        const blob = new Blob([JSON.stringify(payload)], {
+          type: "application/json",
+        });
+        navigator.sendBeacon(reportUrl, blob);
+        console.log("Attempted to send play history with sendBeacon:", payload);
+      }
+    };
+
+    window.addEventListener("pagehide", saveHistoryWithBeacon);
+
+    return () => {
+      window.removeEventListener("pagehide", saveHistoryWithBeacon);
+      saveHistoryWithBeacon();
+    };
+  }, [movieId]);
 
   useEffect(() => {
     // 获取 video 元素的稳定引用
@@ -255,7 +292,7 @@ export default function MoviePlayer({
           Your browser does not support the video tag.
         </video>
       </div>
-      <MovieInfo moviePath={movieStatus.path} />
+      <MovieInfo moviePath={movieStatus.path} videoRef={videoRef} />
     </div>
   );
 }

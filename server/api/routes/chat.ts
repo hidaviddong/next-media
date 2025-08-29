@@ -16,6 +16,14 @@ import {
 } from "ai";
 import { z } from "zod";
 
+export interface MovieContext {
+  name: string;
+  overview: string;
+  movieFolderPath: string;
+  subtitleIndex: number;
+  timestamp: number;
+}
+
 function generateSystemPrompt(movieContext: MovieContext) {
   return `
 ### Role and Goal
@@ -23,12 +31,14 @@ You are an intelligent and helpful movie companion. Your primary goal is to answ
 
 ### Context Provided
 For each user query, you will be provided with the following information:
-1.  **Movie Details:** The title, main actors, and a description of the movie.
+1.  **Movie Details:** The name, and overview of the movie.
 2.  **Current Timestamp:** The exact point in time (e.g., in seconds) in the movie the user is at.
+3.  **Movie Folder Path:** The path to the movie folder.
+4.  **Movie Subtitle Index:** The index of the subtitle.
 
 ### Core Instructions & Tool Usage
 1.  When a user asks a question, first consider the context of the scene at the provided 'timestamp'.
-2.  You have a critical tool: 'getDialogueAtTimestamp({ timestamp: number, window?: number })'. This tool fetches the subtitles/dialogue within a specific time window around the given timestamp.
+2.  You have a critical tool: 'getDialogueAtTimestamp({ movieFolderPath: string, subtitleIndex: number, timestamp: number, window: number })'. This tool fetches the subtitles/dialogue within a specific time window around the given timestamp.
 3.  You **MUST** use this tool whenever the user's question is about the current plot, a character's recent dialogue, or events happening around the provided timestamp. For example, for questions like "What did he just say?", "Who is this person that just appeared?", or "Why are they arguing?".
 4.  Use the information from the tool, combined with the overall movie details, to formulate a comprehensive and accurate answer.
 
@@ -38,16 +48,12 @@ For each user query, you will be provided with the following information:
 3.  **Be Concise:** Provide direct and relevant answers based on the available context.
 
 Here is the movie context:
-  Movie title: ${movieContext.title}
-  Movie actors: ${movieContext.actors}
-  Movie description: ${movieContext.description}
+  Movie name: ${movieContext.name}
+  Movie overview: ${movieContext.overview}
   Movie folder path: ${movieContext.movieFolderPath}
   Movie subtitle index: ${movieContext.subtitleIndex}
   Current movie timestamp: ${movieContext.timestamp}
   The default window duration is 60 seconds. But you can change it when user need to see more context.
-
-When user ask a question about the movie, you should use the tool to get the dialogue at the timestamp, and then use the dialogue to answer the question.
-
 `;
 }
 
@@ -157,15 +163,6 @@ const tools = {
 
 export type ChatTools = InferUITools<typeof tools>;
 export type ChatMessage = UIMessage<never, UIDataTypes, ChatTools>;
-
-interface MovieContext {
-  title: string;
-  actors: string;
-  description: string;
-  movieFolderPath: string;
-  subtitleIndex: number;
-  timestamp: number;
-}
 
 export const chatRoute = new Hono<{ Variables: Variables }>().post(
   "/",

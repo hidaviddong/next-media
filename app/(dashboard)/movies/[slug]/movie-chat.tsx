@@ -27,32 +27,40 @@ import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Response } from "@/components/ai/response";
 import { DefaultChatTransport } from "ai";
+import type { MovieContext } from "@/server/api/routes/chat";
 
-export default function MovieChat() {
+interface MovieChatProps {
+  movieContext: MovieContext;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+}
+
+export default function MovieChat({ movieContext, videoRef }: MovieChatProps) {
   const body = {
-    movieContext: {
-      title: "Annie Hall",
-      actors: "Woody Allen, Diane Keaton",
-      description:
-        "New York comedian Alvy Singer falls in love with the ditsy Annie Hall.",
-      movieFolderPath: "/Users/daviddong/Movies2/安妮·霍尔(1977)",
-      subtitleIndex: 2,
-      timestamp: 3052,
-    },
+    movieContext,
   };
 
   const [input, setInput] = useState("");
-
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
       body,
     }),
   });
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim()) {
-      sendMessage({ text: input });
+      const currentTime = videoRef.current?.currentTime.toFixed(1) ?? 0;
+      console.log("当前播放时间是", currentTime);
+      sendMessage(
+        { text: input },
+        {
+          body: {
+            movieContext: {
+              ...movieContext,
+              timestamp: currentTime,
+            },
+          },
+        }
+      );
       setInput("");
     }
   };
