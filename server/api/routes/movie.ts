@@ -819,7 +819,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           availableSubtitles.push({
             type: "external",
             path: path.join(moviePath, srtFile),
-            lang: srtFile.match(/\.(chi|eng|jpn)\./i)?.[1] || "und", // 简单的语言猜测
+            lang: srtFile.match(/\.(chi|eng|jpn)\./i)?.[1] || "und",
             title: path.basename(srtFile),
           });
         });

@@ -26,10 +26,28 @@ import {
 import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Response } from "@/components/ai/response";
+import { DefaultChatTransport } from "ai";
 
 export default function MovieChat() {
+  const body = {
+    movieContext: {
+      title: "Annie Hall",
+      actors: "Woody Allen, Diane Keaton",
+      description:
+        "New York comedian Alvy Singer falls in love with the ditsy Annie Hall.",
+      movieFolderPath: "/Users/daviddong/Movies2/安妮·霍尔(1977)",
+      subtitleIndex: 2,
+      timestamp: 3052,
+    },
+  };
+
   const [input, setInput] = useState("");
-  const { messages, sendMessage, status } = useChat();
+
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({
+      body,
+    }),
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +110,7 @@ export default function MovieChat() {
             <PromptInputSubmit
               status={status === "streaming" ? "streaming" : "ready"}
               disabled={!input.trim()}
-               className="absolute bottom-2 right-2 size-8"
+              className="absolute bottom-2 right-2 size-8"
             />
           </PromptInput>
         </div>
