@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently --names \"Redis,Next.js,drizzle\" \"npm run dev:redis\" \"next dev --turbopack -H 0.0.0.0\" \"npm run db:studio\"",
+    "dev": "concurrently --names \"Redis,Next.js,drizzle\" \"pnpm run dev:redis\" \"next dev --turbopack -H 0.0.0.0\" \"pnpm run db:studio\"",
     "build": "next build",
-    "start": "next start",
+    "start": "concurrently --names \"Redis,Next.js\" \"pnpm run start:redis\" \"pnpm run start:next\"",
+    "start:next": "next start -H 0.0.0.0",
+    "start:redis": "tsx server/redis/worker.ts",
     "lint": "next lint",
     "db:push": "npx drizzle-kit push",
     "db:studio": "npx drizzle-kit studio",
