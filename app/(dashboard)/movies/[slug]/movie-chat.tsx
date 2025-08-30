@@ -23,11 +23,12 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai/conversation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Response } from "@/components/ai/response";
 import { DefaultChatTransport } from "ai";
 import type { MovieContext } from "@/server/api/routes/chat";
+import { Loader } from "@/components/ai/loader";
 
 interface MovieChatProps {
   movieContext: MovieContext;
@@ -82,31 +83,30 @@ export default function MovieChat({ movieContext, videoRef }: MovieChatProps) {
           <SheetDescription>Ask AI about this movie</SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto pr-4">
-          <Conversation>
-            <ConversationContent>
-              {messages.map((message) => (
-                <Message from={message.role} key={message.id}>
-                  <MessageContent>
-                    {message.parts.map((part, i) => {
-                      switch (part.type) {
-                        case "text":
-                          return (
-                            <Response key={`${message.id}-${i}`}>
-                              {part.text}
-                            </Response>
-                          );
-                        default:
-                          return null;
-                      }
-                    })}
-                  </MessageContent>
-                </Message>
-              ))}
-            </ConversationContent>
-            <ConversationScrollButton />
-          </Conversation>
-        </div>
+        <Conversation className="flex-1 pr-4">
+          <ConversationContent>
+            {messages.map((message) => (
+              <Message from={message.role} key={message.id}>
+                <MessageContent>
+                  {message.parts.map((part, i) => {
+                    switch (part.type) {
+                      case "text":
+                        return (
+                          <Response key={`${message.id}-${i}`}>
+                            {part.text}
+                          </Response>
+                        );
+                      default:
+                        return null;
+                    }
+                  })}
+                </MessageContent>
+              </Message>
+            ))}
+            {status === "submitted" && <Loader />}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
 
         <div className="p-4 pt-0">
           <PromptInput onSubmit={handleSubmit} className="relative">
