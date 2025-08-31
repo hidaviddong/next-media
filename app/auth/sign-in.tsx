@@ -1,4 +1,5 @@
 "use client";
+import "dotenv/config";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -18,7 +19,6 @@ import { useMutation } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useSetAtom } from "jotai";
 import { isSignUpAtom } from "@/lib/store";
-import { APP_BASE_URL } from "@/lib/constant";
 
 const signInSchema = z.object({
   email: z.email({

@@ -9,7 +9,7 @@
     "start": "concurrently --names \"Redis,Next.js\" \"pnpm run start:redis\" \"pnpm run start:next\"",
     "start:next": "next start -H 0.0.0.0",
     "start:redis": "tsx server/redis/worker.ts",
-    "lint": "next lint",
+    "lint": "eslint .",
     "db:push": "npx drizzle-kit push",
     "db:studio": "npx drizzle-kit studio",
     "dev:redis": "tsx server/redis/worker.ts"

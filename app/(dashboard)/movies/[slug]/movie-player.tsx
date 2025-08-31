@@ -92,6 +92,7 @@ export default function MoviePlayer({
         });
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing]);
 
   useEffect(() => {
@@ -234,6 +235,8 @@ export default function MoviePlayer({
         }
       };
     }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     movieStatus.path,
     movieType,

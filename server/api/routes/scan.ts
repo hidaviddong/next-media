@@ -21,7 +21,7 @@ export const scanRoute = new Hono<{ Variables: Variables }>()
   .use(checkUser)
   .post(
     "/",
-    zValidator("json", scanSchema, (result, c) => {
+    zValidator("json", scanSchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -50,7 +50,7 @@ export const scanRoute = new Hono<{ Variables: Variables }>()
   )
   .get(
     "/capacity",
-    zValidator("query", capacitySchema, (result, c) => {
+    zValidator("query", capacitySchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }

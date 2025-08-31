@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { createAuthClient } from "better-auth/react";
 import { APP_BASE_URL } from "./constant";
 

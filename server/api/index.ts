@@ -6,6 +6,8 @@ import { Variables } from "./type";
 import { userRoute } from "./routes/user";
 
 const app = new Hono<{ Variables: Variables }>().basePath("/api");
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const routes = app
   .use(logger(customLogger))
   .use("*", authMiddleware)

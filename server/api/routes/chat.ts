@@ -155,7 +155,8 @@ const tools = {
         );
         return dialogue;
       } catch (e) {
-        throw e;
+        console.error(e);
+        throw new Error("Failed to get dialogue at timestamp", { cause: e });
       }
     },
   }),

@@ -71,8 +71,8 @@ export default function MovieInfo({
   const audioStream = streams.find((s) => s.codec_type === "audio");
   const subtitleStreams = streams.filter((s) => s.codec_type === "subtitle");
   const displayInfo = {
-    size: format.size ? formatSize(format.size) : null,
-    bitrate: format.bit_rate ? formatBitrate(format.bit_rate) : null,
+    size: format.size ? formatSize(parseInt(format.size)) : null,
+    bitrate: format.bit_rate ? formatBitrate(parseInt(format.bit_rate)) : null,
     container: format.format_name?.split(",")[0],
 
     // 视频信息

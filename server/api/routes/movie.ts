@@ -110,7 +110,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   })
   .post(
     "/queue",
-    zValidator("json", queueSchema, (result, c) => {
+    zValidator("json", queueSchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -253,7 +253,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   })
   .get(
     "/movieStatus",
-    zValidator("query", movieStatusSchema, (result, c) => {
+    zValidator("query", movieStatusSchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -299,7 +299,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   )
   .post(
     "/playHistory",
-    zValidator("json", playHistorySchema, (result, c) => {
+    zValidator("json", playHistorySchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -333,7 +333,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   )
   .post(
     "/updateCacheItem",
-    zValidator("json", updateCacheItemSchema, (result, c) => {
+    zValidator("json", updateCacheItemSchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -347,7 +347,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   )
   .post(
     "/watched",
-    zValidator("json", watchedSchema, (result, c) => {
+    zValidator("json", watchedSchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -397,7 +397,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   })
   .get(
     "/directPlay",
-    zValidator("query", directPlaySchema, (result, c) => {
+    zValidator("query", directPlaySchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -435,7 +435,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
 
         const chunksize = end - start + 1;
         const nodeStream = createReadStream(originalPath, { start, end });
-        const webStream = Readable.toWeb(nodeStream) as any;
+        const webStream = Readable.toWeb(nodeStream) as ReadableStream;
 
         signal.onabort = () => {
           console.log(
@@ -452,14 +452,14 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         };
         return c.body(webStream, 206, headers);
       } catch (e) {
-        console.log(e);
-        throw new HTTPException(404, { message: "Server Error" });
+        console.error(e);
+        throw new HTTPException(404, { message: "Server Error", cause: e });
       }
     }
   )
   .get(
     "/hlsPlay",
-    zValidator("query", hlsPlaySchema, (result, c) => {
+    zValidator("query", hlsPlaySchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -487,9 +487,12 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
 
           c.header("Content-Type", "application/vnd.apple.mpegurl");
           return c.body(modifiedContent, 200);
-        } catch (error) {
-          console.log("Error reading m3u8 file:", error);
-          throw new HTTPException(404, { message: "M3U8 file not found" });
+        } catch (e) {
+          console.error("Error reading m3u8 file:", e);
+          throw new HTTPException(404, {
+            message: "M3U8 file not found",
+            cause: e,
+          });
         }
       } else if (filename.endsWith(".ts")) {
         // 如果是 .ts 文件，直接返回文件内容
@@ -497,12 +500,15 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         try {
           await fs.access(filePath);
           const nodeStream = createReadStream(filePath);
-          const webStream = Readable.toWeb(nodeStream) as any;
+          const webStream = Readable.toWeb(nodeStream) as ReadableStream;
           c.header("Content-Type", "video/mp2t");
           return c.body(webStream, 200);
-        } catch (error) {
-          console.log("Error reading ts file:", error);
-          throw new HTTPException(404, { message: "TS segment not found" });
+        } catch (e) {
+          console.error("Error reading ts file:", e);
+          throw new HTTPException(404, {
+            message: "TS segment not found",
+            cause: e,
+          });
         }
       } else {
         throw new HTTPException(400, { message: "Unsupported file type" });
@@ -511,7 +517,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   )
   .get(
     "/remux",
-    zValidator("query", remuxSchema, (result, c) => {
+    zValidator("query", remuxSchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -605,7 +611,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   )
   .get(
     "/remuxProgress",
-    zValidator("query", remuxStatusSchema, (result, c) => {
+    zValidator("query", remuxStatusSchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -622,7 +628,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   )
   .get(
     "/hls",
-    zValidator("query", remuxSchema, (result, c) => {
+    zValidator("query", remuxSchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -715,7 +721,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   )
   .get(
     "/hlsProgress",
-    zValidator("query", remuxStatusSchema, (result, c) => {
+    zValidator("query", remuxStatusSchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -732,7 +738,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
   )
   .get(
     "/movieInfo",
-    zValidator("query", movieInfoSchema, (result, c) => {
+    zValidator("query", movieInfoSchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -774,14 +780,14 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
           movieInfo,
         });
       } catch (e) {
-        console.log(e);
-        throw new HTTPException(404, { message: "Server Error" });
+        console.error(e);
+        throw new HTTPException(404, { message: "Server Error", cause: e });
       }
     }
   )
   .get(
     "/subtitleLists",
-    zValidator("query", subtitleListsSchema, (result, c) => {
+    zValidator("query", subtitleListsSchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: "Invalid Request" });
       }
@@ -826,13 +832,14 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
 
         return c.json(availableSubtitles);
       } catch (e) {
-        throw new HTTPException(404, { message: "Server Error" });
+        console.error(e);
+        throw new HTTPException(404, { message: "Server Error", cause: e });
       }
     }
   )
   .get(
     "/subtitle",
-    zValidator("query", subtitleSchema, (result, c) => {
+    zValidator("query", subtitleSchema, (result) => {
       if (!result.success) {
         throw new HTTPException(400, { message: result.error.message });
       }
@@ -868,11 +875,14 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         ];
 
         const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
-        const webStream = Readable.toWeb(ffmpegProcess.stdout) as any;
+        const webStream = Readable.toWeb(
+          ffmpegProcess.stdout
+        ) as ReadableStream;
         c.header("Content-Type", "text/vtt; charset=UTF-8");
         return c.body(webStream, 200);
       } catch (e) {
-        throw new HTTPException(404, { message: "Server Error" });
+        console.error(e);
+        throw new HTTPException(404, { message: "Server Error", cause: e });
       }
     }
   );
