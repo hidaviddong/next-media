@@ -215,6 +215,9 @@ importers:
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
+      ts-key-enum:
+        specifier: ^3.0.13
+        version: 3.0.13
       use-stick-to-bottom:
         specifier: ^1.1.1
         version: 1.1.1(react@19.1.1)
@@ -4959,6 +4962,9 @@ packages:
   ts-dedent@2.2.0:
     resolution: {integrity: sha512-q5W7tVM71e2xjHZTlgfTDoPF/SmqKG5hddq9SzR49CH2hayqRKJtQ4mtRlSxKaJlR/+9rEM+mnBHf7I2/BQcpQ==}
     engines: {node: '>=6.10'}
+
+  ts-key-enum@3.0.13:
+    resolution: {integrity: sha512-2J5QVm+HLfToI6IpJQADzYYWvJQ0P9i8qV0loewy5UQ9PBcwILkw09te/+NPu6aw8OXIn9jVYOT6xCBZnGg8Yg==}
 
   tsconfig-paths@3.15.0:
     resolution: {integrity: sha512-2Ac2RgzDe/cn48GvOe3M+o82pEFewD3UPbyoUHHdKasHwJKjds4fLXWf/Ux5kATBKN20oaFGu+jbElp1pos0mg==}
@@ -10019,6 +10025,8 @@ snapshots:
       typescript: 5.9.2
 
   ts-dedent@2.2.0: {}
+
+  ts-key-enum@3.0.13: {}
 
   tsconfig-paths@3.15.0:
     dependencies:

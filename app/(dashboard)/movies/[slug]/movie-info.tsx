@@ -108,7 +108,6 @@ export default function MovieInfo({
                 name: currentMovie?.name ?? "",
                 overview: currentMovie?.overview ?? "",
                 subtitleIndex: subtitleStreams[0].index, // 默认用第一条字幕索引
-                timestamp: 0, // 传一个默认值
                 movieFolderPath: moviePath,
               }}
               videoRef={videoRef}
