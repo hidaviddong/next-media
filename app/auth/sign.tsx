@@ -5,7 +5,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@next-media/ui/card.tsx";
 import SignUp from "./sign-up";
 import { useAtomValue } from "jotai";
 import { isSignUpAtom } from "@/lib/store";

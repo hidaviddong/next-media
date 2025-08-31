@@ -1,6 +1,6 @@
 "use client";
-import { Message, MessageContent } from "@/components/ai/message";
-import { Badge } from "@/components/ui/badge";
+import { Message, MessageContent } from "@next-media/ui/message.tsx";
+import { Badge } from "@next-media/ui/badge.tsx";
 import {
   Sheet,
   SheetContent,
@@ -8,13 +8,13 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
+} from "@next-media/ui/sheet.tsx";
 
 import {
   PromptInput,
   PromptInputTextarea,
   PromptInputSubmit,
-} from "@/components/ai/prompt-input";
+} from "@next-media/ui/prompt-input.tsx";
 
 import { Sparkles } from "lucide-react";
 
@@ -22,19 +22,19 @@ import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from "@/components/ai/conversation";
+} from "@next-media/ui/conversation.tsx";
 import { useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
-import { Response } from "@/components/ai/response";
+import { Response } from "@next-media/ui/response.tsx";
 import { DefaultChatTransport } from "ai";
 import type { MovieContext } from "@/server/api/routes/chat";
-import { Loader } from "@/components/ai/loader";
+import { Loader } from "@next-media/ui/loader.tsx";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Kbd, KbdKey } from "@/components/ui/kbd";
+} from "@next-media/ui/tooltip.tsx";
+import { Kbd, KbdKey } from "@next-media/ui/kbd.tsx";
 import { useIsMobile } from "@/lib/hooks";
 
 interface MovieChatProps {
@@ -146,7 +146,9 @@ export default function MovieChat({ movieContext, videoRef }: MovieChatProps) {
             <PromptInputTextarea
               value={input}
               placeholder="Say something..."
-              onChange={(e) => setInput(e.currentTarget.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setInput(e.currentTarget.value)
+              }
             />
             <PromptInputSubmit
               status={status === "streaming" ? "streaming" : "ready"}

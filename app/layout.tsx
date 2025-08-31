@@ -1,6 +1,6 @@
 import Providers from "./providers";
 import type { Metadata } from "next";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@next-media/ui/sonner.tsx";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";

@@ -10,13 +10,13 @@ import {
   Zap,
   Captions,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@next-media/ui/badge.tsx";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@next-media/ui/tooltip.tsx";
 import { formatBitrate, formatSize } from "@/lib/utils";
 import MovieChat from "./movie-chat";
 

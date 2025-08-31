@@ -1,12 +1,12 @@
 "use client";
 import { useUserLibrary, useUserLibraryCapacity } from "./hooks";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@next-media/ui/badge.tsx";
 
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@next-media/ui/tooltip.tsx";
 
 export default function Capacity() {
   const { userLibraryQuery } = useUserLibrary();

@@ -8,8 +8,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+} from "@next-media/ui/command.tsx";
+import { Avatar, AvatarFallback, AvatarImage } from "@next-media/ui/avatar.tsx";
 import { useMovieLists } from "./hooks";
 import { useRouter } from "next/navigation";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";

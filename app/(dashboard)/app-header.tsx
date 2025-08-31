@@ -1,19 +1,19 @@
 "use client";
 
 import { ChevronsUpDown, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@next-media/ui/button.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+} from "@next-media/ui/dropdown-menu.tsx";
+import { Avatar, AvatarFallback } from "@next-media/ui/avatar.tsx";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { Icons } from "@/components/ui/icones";
+import { Icons } from "@next-media/ui/icones.tsx";
 import { GITHUB_REPO_URL } from "@/lib/constant";
 
 export default function AppHeader() {

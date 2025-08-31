@@ -1,0 +1,12 @@
+{
+  "extends": "@next-media/configs/tsconfig.extend.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "jsx": "preserve",
+    "declaration": true,
+    "paths": {
+      "@next-media/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["src/*"]
+}

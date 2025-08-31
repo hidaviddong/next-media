@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "motion/react";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { AspectRatio } from "@next-media/ui/aspect-ratio.tsx";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
 import type { MovieListsResponseType } from "@/lib/types";
 import { Check, MoreVertical, Eye, EyeOff } from "lucide-react";
@@ -10,7 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@next-media/ui/dropdown-menu.tsx";
 import { useMovieWatched } from "./hooks";
 
 interface MovieCardProps {

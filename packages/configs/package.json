@@ -1,0 +1,8 @@
+{
+  "name": "@next-media/configs",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./tsconfig.extend.json": "./tsconfig.extend.json"
+  }
+}

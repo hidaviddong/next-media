@@ -1,5 +1,5 @@
-import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AspectRatio } from "@next-media/ui/aspect-ratio.tsx";
+import { Skeleton } from "@next-media/ui/skeleton.tsx";
 
 export function MovieSkeleton() {
   return (

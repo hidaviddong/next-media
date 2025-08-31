@@ -234,6 +234,9 @@ importers:
       '@iconify-json/mdi':
         specifier: ^1.2.3
         version: 1.2.3
+      '@next-media/ui':
+        specifier: workspace:*
+        version: link:packages/ui
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.1.12
@@ -277,23 +280,13 @@ importers:
         specifier: ^5
         version: 5.9.2
 
-  apps/web:
+  packages/configs: {}
+
+  packages/ui:
     dependencies:
       '@hookform/resolvers':
         specifier: ^5.2.1
         version: 5.2.1(react-hook-form@7.62.0(react@19.1.1))
-      '@libsql/client':
-        specifier: ^0.15.10
-        version: 0.15.12
-      '@next-media/api':
-        specifier: workspace:*
-        version: link:../../packages/api
-      '@next-media/constants':
-        specifier: workspace:*
-        version: link:../../packages/constants
-      '@next-media/db':
-        specifier: workspace:*
-        version: link:../../packages/db
       '@radix-ui/react-accordion':
         specifier: ^1.2.11
         version: 1.2.12(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -310,7 +303,7 @@ importers:
         specifier: ^1.3.2
         version: 1.3.3(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-collapsible':
-        specifier: ^1.1.11
+        specifier: ^1.1.12
         version: 1.1.12(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-context-menu':
         specifier: ^2.2.15
@@ -322,7 +315,7 @@ importers:
         specifier: ^2.1.15
         version: 2.1.16(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-hover-card':
-        specifier: ^1.1.14
+        specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-label':
         specifier: ^2.1.7
@@ -343,10 +336,10 @@ importers:
         specifier: ^1.3.7
         version: 1.3.8(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-scroll-area':
-        specifier: ^1.2.9
+        specifier: ^1.2.10
         version: 1.2.10(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-select':
-        specifier: ^2.2.5
+        specifier: ^2.2.6
         version: 2.2.6(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-separator':
         specifier: ^1.1.7
@@ -370,17 +363,11 @@ importers:
         specifier: ^1.1.10
         version: 1.1.11(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-tooltip':
-        specifier: ^1.2.7
+        specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      '@tanstack/react-query':
-        specifier: ^5.84.1
-        version: 5.85.5(react@19.1.1)
-      '@tanstack/react-query-devtools':
-        specifier: ^5.84.1
-        version: 5.85.5(@tanstack/react-query@5.85.5(react@19.1.1))(react@19.1.1)
-      better-auth:
-        specifier: ^1.3.4
-        version: 1.3.7(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(zod@4.0.17)
+      '@radix-ui/react-use-controllable-state':
+        specifier: ^1.2.2
+        version: 1.2.2(@types/react@19.1.10)(react@19.1.1)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -393,30 +380,18 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      dotenv:
+        specifier: ^17.2.1
+        version: 17.2.1
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.1.1)
-      hls.js:
-        specifier: ^1.6.10
-        version: 1.6.10
-      hono:
-        specifier: ^4.9.0
-        version: 4.9.4
       input-otp:
         specifier: ^1.4.2
         version: 1.4.2(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      jotai:
-        specifier: ^2.13.0
-        version: 2.13.1(@types/react@19.1.10)(react@19.1.1)
       lucide-react:
         specifier: ^0.536.0
         version: 0.536.0(react@19.1.1)
-      motion:
-        specifier: ^12.23.12
-        version: 12.23.12(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      next:
-        specifier: 15.5.0
-        version: 15.5.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -435,15 +410,27 @@ importers:
       react-resizable-panels:
         specifier: ^3.0.4
         version: 3.0.4(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      react-syntax-highlighter:
+        specifier: ^15.6.6
+        version: 15.6.6(react@19.1.1)
       recharts:
         specifier: ^2.15.4
         version: 2.15.4(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      streamdown:
+        specifier: ^1.1.4
+        version: 1.1.4(@types/react@19.1.10)(react@19.1.1)
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
+      ts-key-enum:
+        specifier: ^3.0.13
+        version: 3.0.13
+      use-stick-to-bottom:
+        specifier: ^1.1.1
+        version: 1.1.1(react@19.1.1)
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -454,6 +441,12 @@ importers:
       '@eslint/eslintrc':
         specifier: ^3
         version: 3.3.1
+      '@iconify-json/mdi':
+        specifier: ^1.2.3
+        version: 1.2.3
+      '@next-media/configs':
+        specifier: workspace:*
+        version: link:../configs
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.1.12
@@ -469,15 +462,6 @@ importers:
       '@types/react-dom':
         specifier: 19.1.7
         version: 19.1.7(@types/react@19.1.10)
-      eslint:
-        specifier: ^9
-        version: 9.33.0(jiti@2.5.1)
-      eslint-config-next:
-        specifier: 15.5.0
-        version: 15.5.0(eslint@9.33.0(jiti@2.5.1))(typescript@5.9.2)
-      eslint-config-prettier:
-        specifier: ^10.1.8
-        version: 10.1.8(eslint@9.33.0(jiti@2.5.1))
       tailwindcss:
         specifier: ^4
         version: 4.1.12
@@ -489,129 +473,6 @@ importers:
         version: 1.3.7
       typescript:
         specifier: ^5
-        version: 5.9.2
-
-  packages/api:
-    dependencies:
-      '@hono/node-server':
-        specifier: ^1.19.0
-        version: 1.19.0(hono@4.9.4)
-      '@hono/zod-validator':
-        specifier: ^0.7.2
-        version: 0.7.2(hono@4.9.4)(zod@4.0.17)
-      '@next-media/constants':
-        specifier: workspace:*
-        version: link:../constants
-      '@next-media/db':
-        specifier: workspace:*
-        version: link:../db
-      '@next-media/queue':
-        specifier: workspace:*
-        version: link:../queue
-      '@next-media/types':
-        specifier: workspace:*
-        version: link:../types
-      better-auth:
-        specifier: ^1.3.4
-        version: 1.3.7(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(zod@4.0.17)
-      dotenv:
-        specifier: ^17.2.1
-        version: 17.2.1
-      hono:
-        specifier: ^4.9.0
-        version: 4.9.4
-      zod:
-        specifier: ^4.0.15
-        version: 4.0.17
-    devDependencies:
-      '@types/node':
-        specifier: ^24.3.0
-        version: 24.3.0
-      tsx:
-        specifier: ^4.20.3
-        version: 4.20.4
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-
-  packages/constants:
-    devDependencies:
-      '@types/node':
-        specifier: ^20
-        version: 20.19.11
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-
-  packages/db:
-    dependencies:
-      '@libsql/client':
-        specifier: ^0.15.10
-        version: 0.15.12
-      '@next-media/types':
-        specifier: workspace:*
-        version: link:../types
-      dotenv:
-        specifier: ^17.2.1
-        version: 17.2.1
-      drizzle-orm:
-        specifier: ^0.44.4
-        version: 0.44.4(@libsql/client@0.15.12)(kysely@0.28.5)
-      nanoid:
-        specifier: ^5.1.5
-        version: 5.1.5
-    devDependencies:
-      '@types/node':
-        specifier: ^20.19.11
-        version: 20.19.11
-      drizzle-kit:
-        specifier: ^0.31.4
-        version: 0.31.4
-      tsx:
-        specifier: ^4.20.3
-        version: 4.20.4
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-
-  packages/queue:
-    dependencies:
-      '@next-media/constants':
-        specifier: workspace:*
-        version: link:../constants
-      '@next-media/db':
-        specifier: workspace:*
-        version: link:../db
-      '@next-media/types':
-        specifier: workspace:*
-        version: link:../types
-      bullmq:
-        specifier: ^5.56.9
-        version: 5.58.0
-      dotenv:
-        specifier: ^17.2.1
-        version: 17.2.1
-      ioredis:
-        specifier: ^5.7.0
-        version: 5.7.0
-    devDependencies:
-      '@types/node':
-        specifier: ^20
-        version: 20.19.11
-      tsx:
-        specifier: ^4.20.3
-        version: 4.20.4
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-
-  packages/types:
-    devDependencies:
-      '@types/node':
-        specifier: ^20
-        version: 20.19.11
-      typescript:
-        specifier: ^5.9.2
         version: 5.9.2
 
 packages:
@@ -1058,12 +919,6 @@ packages:
 
   '@hexagon/base64@1.1.28':
     resolution: {integrity: sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw==}
-
-  '@hono/node-server@1.19.0':
-    resolution: {integrity: sha512-1k8/8OHf5VIymJEcJyVksFpT+AQ5euY0VA5hUkCnlKpD4mr8FSbvXaHblxeTTEr90OaqWzAkQaqD80qHZQKxBA==}
-    engines: {node: '>=18.14.1'}
-    peerDependencies:
-      hono: ^4
 
   '@hono/zod-validator@0.7.2':
     resolution: {integrity: sha512-ub5eL/NeZ4eLZawu78JpW/J+dugDAYhwqUIdp9KYScI6PZECij4Hx4UsrthlEUutqDDhPwRI0MscUfNkvn/mqQ==}
@@ -2350,9 +2205,6 @@ packages:
 
   '@types/node@20.19.11':
     resolution: {integrity: sha512-uug3FEEGv0r+jrecvUUpbY8lLisvIjg6AAic6a2bSP5OEOLeJsDSnvhCDov7ipFFMXS3orMpzlmi0ZcuGkBbow==}
-
-  '@types/node@24.3.0':
-    resolution: {integrity: sha512-aPTXCrfwnDLj4VvXrm+UUCQjNEvJgNA8s5F1cvwQU+3KNltTOkBm1j30uNLyqqPNe7gE3KFzImYoZEfLhp4Yow==}
 
   '@types/react-dom@19.1.7':
     resolution: {integrity: sha512-i5ZzwYpqjmrKenzkoLM2Ibzt6mAsM7pxB6BCIouEVVmgiqaMj1TjaK7hnA36hbW5aZv20kx7Lw6hWzPWg0Rurw==}
@@ -5018,9 +4870,6 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
-  undici-types@7.10.0:
-    resolution: {integrity: sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag==}
-
   unified@11.0.5:
     resolution: {integrity: sha512-xKvGhPWw3k84Qjh8bI3ZeJjqnyadK+GEFtazSfZv/rKeTkTjOJho6mFqh2SM96iIcZokxiOpg78GazTSg8+KHA==}
 
@@ -5519,10 +5368,6 @@ snapshots:
   '@floating-ui/utils@0.2.10': {}
 
   '@hexagon/base64@1.1.28': {}
-
-  '@hono/node-server@1.19.0(hono@4.9.4)':
-    dependencies:
-      hono: 4.9.4
 
   '@hono/zod-validator@0.7.2(hono@4.9.4)(zod@4.0.17)':
     dependencies:
@@ -6821,10 +6666,6 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
-  '@types/node@24.3.0':
-    dependencies:
-      undici-types: 7.10.0
-
   '@types/react-dom@19.1.7(@types/react@19.1.10)':
     dependencies:
       '@types/react': 19.1.10
@@ -7614,11 +7455,6 @@ snapshots:
     optionalDependencies:
       '@libsql/client': 0.15.12
       '@opentelemetry/api': 1.9.0
-      kysely: 0.28.5
-
-  drizzle-orm@0.44.4(@libsql/client@0.15.12)(kysely@0.28.5):
-    optionalDependencies:
-      '@libsql/client': 0.15.12
       kysely: 0.28.5
 
   dunder-proto@1.0.1:
@@ -9218,29 +9054,6 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  next@15.5.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
-    dependencies:
-      '@next/env': 15.5.0
-      '@swc/helpers': 0.5.15
-      caniuse-lite: 1.0.30001737
-      postcss: 8.4.31
-      react: 19.1.1
-      react-dom: 19.1.1(react@19.1.1)
-      styled-jsx: 5.1.6(react@19.1.1)
-    optionalDependencies:
-      '@next/swc-darwin-arm64': 15.5.0
-      '@next/swc-darwin-x64': 15.5.0
-      '@next/swc-linux-arm64-gnu': 15.5.0
-      '@next/swc-linux-arm64-musl': 15.5.0
-      '@next/swc-linux-x64-gnu': 15.5.0
-      '@next/swc-linux-x64-musl': 15.5.0
-      '@next/swc-win32-arm64-msvc': 15.5.0
-      '@next/swc-win32-x64-msvc': 15.5.0
-      sharp: 0.34.3
-    transitivePeerDependencies:
-      - '@babel/core'
-      - babel-plugin-macros
-
   node-abort-controller@3.1.1: {}
 
   node-domexception@1.0.0: {}
@@ -10097,8 +9910,6 @@ snapshots:
   uncrypto@0.1.3: {}
 
   undici-types@6.21.0: {}
-
-  undici-types@7.10.0: {}
 
   unified@11.0.5:
     dependencies:

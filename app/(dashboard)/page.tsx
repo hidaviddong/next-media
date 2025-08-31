@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@next-media/ui/button.jsx";
 import { Plus, Film } from "lucide-react";
 
 export default function DashboardPage() {
