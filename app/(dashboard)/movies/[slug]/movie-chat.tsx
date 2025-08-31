@@ -12,10 +12,8 @@ import {
 
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
@@ -40,13 +38,12 @@ import { Response } from "@/components/ai/response";
 import { DefaultChatTransport } from "ai";
 import type { MovieContext } from "@/server/api/routes/chat";
 import { Loader } from "@/components/ai/loader";
-import { Tool } from "@/components/ai/tool";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Kbd, KbdKey } from "@/components/ui/kibo-ui/kbd";
+import { Kbd, KbdKey } from "@/components/ui/kbd";
 import { useIsMobile } from "@/lib/hooks";
 
 interface MovieChatProps {
