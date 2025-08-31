@@ -45,5 +45,5 @@ export type KbdKeyProps = Omit<ComponentProps<"kbd">, "aria-label"> & {
 };
 
 export const KbdKey = ({ className, ...props }: KbdKeyProps) => (
-  <kbd {...props} />
+  <kbd {...props} className={className} />
 );

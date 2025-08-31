@@ -26,7 +26,7 @@ import {
 import { useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Response } from "@/components/ai/response";
-import { type ChatStatus, DefaultChatTransport } from "ai";
+import { DefaultChatTransport } from "ai";
 import type { MovieContext } from "@/server/api/routes/chat";
 import { Loader } from "@/components/ai/loader";
 import {
@@ -40,94 +40,6 @@ import { useIsMobile } from "@/lib/hooks";
 interface MovieChatProps {
   movieContext: Omit<MovieContext, "timestamp">;
   videoRef: React.RefObject<HTMLVideoElement | null>;
-}
-
-function MovieChatTrigger() {
-  return (
-    <Badge
-      variant="secondary"
-      className="cursor-pointer py-1 flex items-center gap-1.5 border-violet-200 bg-violet-100 hover:bg-violet-200 text-violet-800"
-    >
-      <Sparkles className="wxw-3.5 h-3.5" />
-      <span>AI Chat</span>
-    </Badge>
-  );
-}
-
-function MovieChatContent() {
-  return (
-    <Kbd>
-      <KbdKey aria-label="Meta">⌘</KbdKey>
-      <KbdKey>k</KbdKey>
-    </Kbd>
-  );
-}
-
-function ChatConversation({
-  messages,
-  status,
-}: {
-  messages: any[];
-  status: string;
-}) {
-  return (
-    <Conversation className="flex-1 pr-4">
-      <ConversationContent>
-        {messages.map((message) => (
-          <Message from={message.role} key={message.id}>
-            <MessageContent>
-              {message.parts.map((part: any, i: number) => {
-                switch (part.type) {
-                  case "text":
-                    return (
-                      <Response key={`${message.id}-${i}`}>
-                        {part.text}
-                      </Response>
-                    );
-                  default:
-                    return null;
-                }
-              })}
-            </MessageContent>
-          </Message>
-        ))}
-        {status === "submitted" && <Loader />}
-      </ConversationContent>
-      <ConversationScrollButton />
-    </Conversation>
-  );
-}
-
-function ChatInput({
-  input,
-  setInput,
-  handleSubmit,
-  status,
-  stop,
-}: {
-  input: string;
-  setInput: (value: string) => void;
-  handleSubmit: (e: React.FormEvent) => void;
-  status: ChatStatus;
-  stop: () => Promise<void>;
-}) {
-  return (
-    <div className="p-4 pt-0">
-      <PromptInput onSubmit={handleSubmit} className="relative">
-        <PromptInputTextarea
-          value={input}
-          placeholder="Say something..."
-          onChange={(e) => setInput(e.currentTarget.value)}
-        />
-        <PromptInputSubmit
-          status={status === "streaming" ? "streaming" : "ready"}
-          disabled={status === "submitted"}
-          className="absolute bottom-2 right-2 size-8"
-          onClick={status === "streaming" ? stop : undefined}
-        />
-      </PromptInput>
-    </div>
-  );
 }
 
 export default function MovieChat({ movieContext, videoRef }: MovieChatProps) {
@@ -179,10 +91,19 @@ export default function MovieChat({ movieContext, videoRef }: MovieChatProps) {
       <SheetTrigger>
         <Tooltip>
           <TooltipTrigger asChild>
-            <MovieChatTrigger />
+            <Badge
+              variant="secondary"
+              className="cursor-pointer py-1 flex items-center gap-1.5 border-violet-200 bg-violet-100 hover:bg-violet-200 text-violet-800"
+            >
+              <Sparkles className="wxw-3.5 h-3.5" />
+              <span>AI Chat</span>
+            </Badge>
           </TooltipTrigger>
           <TooltipContent>
-            <MovieChatContent />
+            <Kbd>
+              <KbdKey aria-label="Meta">⌘</KbdKey>
+              <KbdKey>k</KbdKey>
+            </Kbd>
           </TooltipContent>
         </Tooltip>
       </SheetTrigger>
@@ -195,14 +116,46 @@ export default function MovieChat({ movieContext, videoRef }: MovieChatProps) {
           <SheetDescription>Ask AI about this movie</SheetDescription>
         </SheetHeader>
 
-        <ChatConversation messages={messages} status={status} />
-        <ChatInput
-          input={input}
-          setInput={setInput}
-          handleSubmit={handleSubmit}
-          status={status}
-          stop={stop}
-        />
+        <Conversation className="flex-1 pr-4">
+          <ConversationContent>
+            {messages.map((message) => (
+              <Message from={message.role} key={message.id}>
+                <MessageContent>
+                  {message.parts.map((part, i) => {
+                    switch (part.type) {
+                      case "text":
+                        return (
+                          <Response key={`${message.id}-${i}`}>
+                            {part.text}
+                          </Response>
+                        );
+                      default:
+                        return null;
+                    }
+                  })}
+                </MessageContent>
+              </Message>
+            ))}
+            {status === "submitted" && <Loader />}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+
+        <div className="p-4 pt-0">
+          <PromptInput onSubmit={handleSubmit} className="relative">
+            <PromptInputTextarea
+              value={input}
+              placeholder="Say something..."
+              onChange={(e) => setInput(e.currentTarget.value)}
+            />
+            <PromptInputSubmit
+              status={status === "streaming" ? "streaming" : "ready"}
+              disabled={status === "submitted"}
+              className="absolute bottom-2 right-2 size-8"
+              onClick={status === "streaming" ? stop : undefined}
+            />
+          </PromptInput>
+        </div>
       </SheetContent>
     </Sheet>
   );
