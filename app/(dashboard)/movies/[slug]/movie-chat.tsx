@@ -11,15 +11,6 @@ import {
 } from "@/components/ui/sheet";
 
 import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
-
-import {
   PromptInput,
   PromptInputTextarea,
   PromptInputSubmit,
@@ -35,7 +26,7 @@ import {
 import { useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Response } from "@/components/ai/response";
-import { DefaultChatTransport } from "ai";
+import { type ChatStatus, DefaultChatTransport } from "ai";
 import type { MovieContext } from "@/server/api/routes/chat";
 import { Loader } from "@/components/ai/loader";
 import {
@@ -112,11 +103,13 @@ function ChatInput({
   setInput,
   handleSubmit,
   status,
+  stop,
 }: {
   input: string;
   setInput: (value: string) => void;
   handleSubmit: (e: React.FormEvent) => void;
-  status: string;
+  status: ChatStatus;
+  stop: () => Promise<void>;
 }) {
   return (
     <div className="p-4 pt-0">
@@ -128,8 +121,9 @@ function ChatInput({
         />
         <PromptInputSubmit
           status={status === "streaming" ? "streaming" : "ready"}
-          disabled={!input.trim()}
+          disabled={status === "submitted"}
           className="absolute bottom-2 right-2 size-8"
+          onClick={status === "streaming" ? stop : undefined}
         />
       </PromptInput>
     </div>
@@ -153,7 +147,7 @@ export default function MovieChat({ movieContext, videoRef }: MovieChatProps) {
     return () => document.removeEventListener("keydown", down);
   }, []);
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, stop } = useChat({
     transport: new DefaultChatTransport({
       body: {
         movieContext,
@@ -165,7 +159,6 @@ export default function MovieChat({ movieContext, videoRef }: MovieChatProps) {
     e.preventDefault();
     if (input.trim()) {
       const currentTime = videoRef.current?.currentTime.toFixed(1) ?? 0;
-      console.log("当前播放时间是", currentTime);
       sendMessage(
         { text: input },
         {
@@ -181,37 +174,6 @@ export default function MovieChat({ movieContext, videoRef }: MovieChatProps) {
     }
   };
 
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <MovieChatTrigger />
-            </TooltipTrigger>
-            <TooltipContent>
-              <MovieChatContent />
-            </TooltipContent>
-          </Tooltip>
-        </DrawerTrigger>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Chat</DrawerTitle>
-            <DrawerDescription>Ask AI about this movie</DrawerDescription>
-          </DrawerHeader>
-
-          <ChatConversation messages={messages} status={status} />
-          <ChatInput
-            input={input}
-            setInput={setInput}
-            handleSubmit={handleSubmit}
-            status={status}
-          />
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger>
@@ -224,7 +186,10 @@ export default function MovieChat({ movieContext, videoRef }: MovieChatProps) {
           </TooltipContent>
         </Tooltip>
       </SheetTrigger>
-      <SheetContent className="flex flex-col h-1/2 top-auto">
+      <SheetContent
+        className="flex flex-col h-1/2 top-auto"
+        side={isMobile ? "bottom" : "right"}
+      >
         <SheetHeader>
           <SheetTitle>Chat</SheetTitle>
           <SheetDescription>Ask AI about this movie</SheetDescription>
@@ -236,6 +201,7 @@ export default function MovieChat({ movieContext, videoRef }: MovieChatProps) {
           setInput={setInput}
           handleSubmit={handleSubmit}
           status={status}
+          stop={stop}
         />
       </SheetContent>
     </Sheet>
