@@ -1,6 +1,6 @@
 import client from "./hono";
 import type { InferRequestType, InferResponseType } from "hono/client";
-import { movie } from "@/server/drizzle/schema";
+import { movie } from "@next-media/db/schema.ts";
 
 export type MovieListsRequestType = InferRequestType<
   typeof client.api.movie.lists.$get

@@ -6,9 +6,9 @@ import {
   TmdbApiRequestJob,
   TmdbMovieResponse,
 } from "@/lib/types";
-import { library, library_movies, movie } from "../drizzle/schema";
+import { library, library_movies, movie } from "@next-media/db/schema.ts";
 import { and, eq } from "drizzle-orm";
-import { db } from "../drizzle";
+import { db } from "@next-media/db/index.ts";
 import { TMDB_BASE_URL } from "@/lib/constant";
 import { nanoid } from "nanoid";
 import path from "node:path";

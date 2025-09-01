@@ -1,8 +1,8 @@
 import { HTTPException } from "hono/http-exception";
 import type { Variables } from "../type";
 import { Hono } from "hono";
-import { db } from "@/server/drizzle";
-import { library } from "@/server/drizzle/schema";
+import { db } from "@next-media/db/index.ts";
+import { library } from "@next-media/db/schema.ts";
 import { eq } from "drizzle-orm";
 
 export const userRoute = new Hono<{ Variables: Variables }>()

@@ -1,6 +1,6 @@
 import { and, asc, eq, sum } from "drizzle-orm";
-import { db } from "../drizzle";
-import { cache_item, library } from "../drizzle/schema";
+import { db } from "@next-media/db/index.ts";
+import { cache_item, library } from "@next-media/db/schema.ts";
 import { nanoid } from "nanoid";
 import { hlsQueue, remuxToMp4Queue } from ".";
 import path from "node:path";
