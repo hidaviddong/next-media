@@ -17,8 +17,23 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@next-media/ui/tooltip.tsx";
-import { formatBitrate, formatSize } from "@/lib/utils";
 import MovieChat from "./movie-chat";
+
+function formatSize(bytes: number = 0) {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
+function formatBitrate(bits: number = 0) {
+  if (bits === 0) return "0 bps";
+  const k = 1000;
+  const sizes = ["bps", "kbps", "Mbps", "Gbps"];
+  const i = Math.floor(Math.log(bits) / Math.log(k));
+  return parseFloat((bits / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
 
 const playbackTypeConfig = {
   direct: {

@@ -14,13 +14,32 @@ import {
   useUserLibrary,
 } from "../hooks";
 import { useEffect, useRef } from "react";
-import { getDirname, getSubtitleSrc } from "@/lib/utils";
 import { MovieProgress } from "./movie-progress";
 import { useQueryState } from "nuqs";
 import type {
   MovieStatusResponseType,
   PlayHistoryRequestType,
+  SubtitleListsResponseType,
 } from "@/lib/types";
+
+function getDirname(path: string) {
+  const lastSlashIndex = path.lastIndexOf("/");
+  if (lastSlashIndex === -1) return ".";
+  return path.substring(0, lastSlashIndex);
+}
+
+function getSubtitleSrc(
+  moviePath: string,
+  track: SubtitleListsResponseType[number]
+) {
+  const params = new URLSearchParams({ moviePath });
+  if (track.type === "embedded") {
+    params.set("index", track.index!.toString());
+  } else {
+    params.set("externalPath", track.path!);
+  }
+  return `/api/movie/subtitle?${params.toString()}`;
+}
 
 export default function MoviePlayer({
   movieStatus,
