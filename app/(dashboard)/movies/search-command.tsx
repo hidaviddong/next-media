@@ -14,7 +14,7 @@ import { useMovieLists } from "./hooks";
 import { useRouter } from "next/navigation";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
 import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@next-media/ui/utils/index.ts";
 
 export default function SearchCommand() {
   const { movieListsQuery } = useMovieLists();

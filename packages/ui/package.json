@@ -56,12 +56,12 @@
     "ts-key-enum": "^3.0.13",
     "use-stick-to-bottom": "^1.1.1",
     "vaul": "^1.1.2",
-    "zod": "^4.0.15"
+    "zod": "^4.0.15",
+    "media-chrome": "^4.13.0"
   },
   "devDependencies": {
     "@next-media/configs": "workspace:*",
     "@eslint/eslintrc": "^3",
-    "@iconify-json/mdi": "^1.2.3",
     "@tailwindcss/postcss": "^4",
     "@tanstack/eslint-plugin-query": "^5.83.1",
     "@types/node": "^20",
