@@ -1,7 +1,7 @@
 "use client";
 import { Loader2, Plus, RefreshCcw } from "lucide-react";
 import AddFolderDialog from "./add-folder-dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@next-media/ui/button.tsx";
 import { useSetAtom } from "jotai";
 import { addFolderDialogOpenAtom } from "@/lib/store";
 import { useQueueMovies, useScanMovies, useUserLibrary } from "./hooks";
@@ -9,7 +9,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@next-media/ui/tooltip.tsx";
 import Capacity from "./capacity";
 
 export default function AddFolder() {

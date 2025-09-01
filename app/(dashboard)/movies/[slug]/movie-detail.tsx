@@ -1,14 +1,14 @@
 "use client";
 
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { AspectRatio } from "@next-media/ui/aspect-ratio.tsx";
 import { Calendar, MoveLeftIcon, Play } from "lucide-react";
 import Image from "next/image";
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-} from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
+} from "@next-media/ui/tooltip.tsx";
+import { Button } from "@next-media/ui/button.tsx";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import MoviePlayer from "./movie-player";
 import type { Movie } from "@/lib/types";
@@ -16,7 +16,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { TMDB_IMAGE_BASE_URL } from "@/lib/constant";
 import { useMovieStatus, useUpdateCacheItem, useUserLibrary } from "../hooks";
 import { toast } from "sonner";
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@next-media/ui/progress.tsx";
 import { useQueryClient } from "@tanstack/react-query";
 interface MovieDetailProps {
   movieRecord: Movie;

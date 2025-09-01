@@ -90,6 +90,7 @@
     "zod": "^4.0.15"
   },
   "devDependencies": {
+    "@next-media/ui": "workspace:*",
     "@eslint/eslintrc": "^3",
     "@iconify-json/mdi": "^1.2.3",
     "@tailwindcss/postcss": "^4",

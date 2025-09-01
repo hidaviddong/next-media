@@ -1,20 +1,20 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@next-media/ui/button.tsx";
+import { Input } from "@next-media/ui/input.tsx";
+import { Label } from "@next-media/ui/label.tsx";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@next-media/ui/dialog.tsx";
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-} from "@/components/ui/drawer";
+} from "@next-media/ui/drawer.tsx";
 import { useIsMobile } from "@/lib/hooks";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -28,7 +28,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@next-media/ui/select.tsx";
 
 const stepText = {
   1: "Add Folder",
