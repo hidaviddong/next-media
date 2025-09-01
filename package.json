@@ -4,14 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently --names \"Redis,Next.js,drizzle\" \"pnpm run dev:redis\" \"next dev --turbopack -H 0.0.0.0\" \"pnpm run db:studio\"",
+    "dev": "concurrently --names \"Redis,Next.js\" \"pnpm run dev:redis\" \"next dev --turbopack -H 0.0.0.0\"",
     "build": "next build",
     "start": "concurrently --names \"Redis,Next.js\" \"pnpm run start:redis\" \"pnpm run start:next\"",
     "start:next": "next start -H 0.0.0.0",
     "start:redis": "tsx server/redis/worker.ts",
     "lint": "eslint .",
-    "db:push": "npx drizzle-kit push",
-    "db:studio": "npx drizzle-kit studio",
     "dev:redis": "tsx server/redis/worker.ts"
   },
   "dependencies": {
@@ -19,7 +17,7 @@
     "@ai-sdk/react": "^2.0.26",
     "@hono/zod-validator": "^0.7.2",
     "@hookform/resolvers": "^5.2.1",
-    "@libsql/client": "^0.15.10",
+    "@libsql/client": "^0.15.12",
     "@tanstack/react-query": "^5.84.1",
     "@tanstack/react-query-devtools": "^5.84.1",
     "ai": "^5.0.26",
@@ -44,15 +42,15 @@
     "zod": "^4.0.15"
   },
   "devDependencies": {
-    "@next-media/ui": "workspace:*",
     "@eslint/eslintrc": "^3",
+    "@next-media/db": "workspace:*",
+    "@next-media/ui": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@tanstack/eslint-plugin-query": "^5.83.1",
     "@types/node": "^20",
     "@types/react": "19.1.10",
     "@types/react-dom": "19.1.7",
     "concurrently": "^9.2.0",
-    "drizzle-kit": "^0.31.4",
     "eslint": "^9",
     "eslint-config-next": "15.5.0",
     "eslint-config-prettier": "^10.1.8",

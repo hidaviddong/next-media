@@ -1,4 +1,4 @@
-import { db } from "@/server/drizzle";
+import { db } from "@next-media/db/index.ts";
 import { HTTPException } from "hono/http-exception";
 import { hlsQueue, remuxToMp4Queue, tmdbApiRequestQueue } from "@/server/redis";
 import {
@@ -6,7 +6,7 @@ import {
   library,
   library_movies,
   play_history,
-} from "@/server/drizzle/schema";
+} from "@next-media/db/schema.ts";
 import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { Variables } from "../type";

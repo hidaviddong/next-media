@@ -1,0 +1,21 @@
+{
+  "name": "@next-media/db",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "db:studio": "drizzle-kit studio",
+    "db:push": "drizzle-kit push"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.12",
+    "dotenv": "^17.2.1",
+    "drizzle-orm": "^0.44.4"
+  },
+  "devDependencies": {
+    "@next-media/configs": "workspace:*",
+    "drizzle-kit": "^0.31.4"
+  }
+}

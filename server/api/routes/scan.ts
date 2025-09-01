@@ -6,9 +6,9 @@ import fs from "fs/promises";
 import { parseMovieFolder } from "@/server/utils";
 import type { Variables } from "../type";
 import { checkUser } from "../middleware";
-import { db } from "@/server/drizzle";
+import { db } from "@next-media/db/index.ts";
 import { and, eq } from "drizzle-orm";
-import { cache_item, library } from "@/server/drizzle/schema";
+import { cache_item, library } from "@next-media/db/schema.ts";
 const scanSchema = z.object({
   libraryPath: z.string(),
 });

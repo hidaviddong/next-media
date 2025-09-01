@@ -1,5 +1,5 @@
-import { db } from "@/server/drizzle";
-import { movie } from "@/server/drizzle/schema";
+import { db } from "@next-media/db/index.ts";
+import { movie } from "@next-media/db/schema.ts";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { MovieDetail } from "./movie-detail";
