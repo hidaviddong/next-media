@@ -17,6 +17,7 @@
     "zod": "^4.0.17"
   },
   "devDependencies": {
+    "@next-media/configs": "workspace:*",
     "@next-media/auth": "workspace:*",
     "@next-media/db": "workspace:*",
     "@next-media/worker": "workspace:*",
