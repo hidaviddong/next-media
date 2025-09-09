@@ -1,0 +1,25 @@
+{
+  "name": "@next-media/worker",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./queue": "./src/index.ts",
+    "./utils": "./src/utils.ts",
+    "./lru": "./src/lru.ts"
+  },
+  "scripts": {
+    "dev": "tsx ./src/worker.ts"
+  },
+  "dependencies": {
+    "@next-media/configs": "workspace:*",
+    "drizzle-orm": "^0.44.4",
+    "ioredis": "^5.7.0",
+    "nanoid": "^5.1.5",
+    "bullmq": "^5.56.9"
+  },
+  "devDependencies": {
+    "@next-media/db": "workspace:*",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.20.3"
+  }
+}

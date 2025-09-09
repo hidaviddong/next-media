@@ -3,19 +3,23 @@
   "type": "module",
   "private": true,
   "exports": {
-    "./*": "./src/*"
+    "./schema": "./src/schema.ts",
+    "./db": "./src/index.ts"
   },
   "scripts": {
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@libsql/client": "^0.15.12",
+    "better-sqlite3": "^11.6.0",
     "dotenv": "^17.2.1",
-    "drizzle-orm": "^0.44.4"
+    "drizzle-orm": "^0.44.4",
+    "mlly": "^1.8.0"
   },
   "devDependencies": {
     "@next-media/configs": "workspace:*",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20",
     "drizzle-kit": "^0.31.4"
   }
 }

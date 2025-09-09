@@ -3,6 +3,11 @@
   "type": "module",
   "private": true,
   "exports": {
-    "./tsconfig.extend.json": "./tsconfig.extend.json"
+    "./tsconfig.extend.json": "./tsconfig.extend.json",
+    "./constant": "./src/constant.ts",
+    "./env": "./src/env.ts"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.1"
   }
 }

@@ -3,10 +3,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "declaration": true,
-    "types": ["node"],
     "paths": {
       "@next-media/db/*": ["./src/*"]
     }
   },
-  "include": ["src/*", "drizzle.config.ts"]
+  "include": ["src/*"]
 }
