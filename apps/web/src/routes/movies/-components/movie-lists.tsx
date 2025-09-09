@@ -1,9 +1,6 @@
-"use client";
-import React from "react";
-import { AnimatePresence } from "motion/react";
 import { MovieCard } from "./movie-card";
 import { MovieSkeletonGrid } from "./movie-skeleton";
-import { useMovieLists } from "./hooks";
+import { useMovieLists } from "@/utils";
 
 export default function MovieLists() {
   const { movieListsQuery } = useMovieLists();
@@ -28,11 +25,9 @@ export default function MovieLists() {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-x-4 gap-y-8">
-      <AnimatePresence mode="popLayout">
-        {movies.map((movie) => (
-          <MovieCard key={movie.movie.id + movie.path} movie={movie} />
-        ))}
-      </AnimatePresence>
+      {movies.map((movie) => (
+        <MovieCard key={movie.movie.id + movie.path} movie={movie} />
+      ))}
     </div>
   );
 }

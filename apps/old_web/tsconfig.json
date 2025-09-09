@@ -27,7 +27,8 @@
     "apps/web/next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "../web/src/routes/movies/-components/movie-lists.tsx"
   ],
   "exclude": ["node_modules"]
 }

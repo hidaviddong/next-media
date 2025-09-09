@@ -3,7 +3,7 @@ import React from "react";
 import { motion } from "motion/react";
 import AddFolder from "./add-folder";
 import QueueStatus from "./queue-status";
-import MovieList from "./movie-lists";
+import MovieList from "../../../../web/src/routes/movies/-components/movie-lists";
 import SearchCommand from "./search-command";
 
 export default function MoviesPage() {

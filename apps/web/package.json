@@ -19,6 +19,7 @@
     "@tanstack/react-router": "^1.130.2",
     "@tanstack/react-router-devtools": "^1.131.5",
     "@tanstack/router-plugin": "^1.121.2",
+    "hono": "^4.9.6",
     "lucide-react": "^0.536.0",
     "next-themes": "^0.4.6",
     "react": "^19.0.0",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@eslint/eslintrc": "^3",
+    "@next-media/api": "workspace:*",
     "@next-media/auth": "workspace:*",
     "@next-media/configs": "workspace:*",
     "@next-media/ui": "workspace:*",

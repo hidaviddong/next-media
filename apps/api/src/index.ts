@@ -15,7 +15,7 @@ import type { Variables } from "./type.js";
 
 const app = new Hono<{ Variables: Variables }>().basePath("/api");
 
-const routes = app
+export const routes = app
   .use(
     cors({
       origin: WEB_BASE_URL,
@@ -41,5 +41,3 @@ serve(
 );
 
 export default app;
-
-export type AppType = typeof routes;
