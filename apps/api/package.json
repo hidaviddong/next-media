@@ -1,0 +1,27 @@
+{
+  "name": "@next-media/api",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@ai-sdk/deepseek": "^1.0.13",
+    "@hono/node-server": "^1.19.0",
+    "@hono/zod-validator": "^0.7.2",
+    "ai": "^5.0.26",
+    "drizzle-orm": "^0.44.4",
+    "hono": "^4.9.6",
+    "nanoid": "^5.1.5",
+    "zod": "^4.0.17"
+  },
+  "devDependencies": {
+    "@next-media/auth": "workspace:*",
+    "@next-media/db": "workspace:*",
+    "@next-media/worker": "workspace:*",
+    "@types/node": "^20.11.17",
+    "tsx": "^4.7.1",
+    "typescript": "^5.8.3"
+  }
+}
