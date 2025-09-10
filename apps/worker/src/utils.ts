@@ -7,7 +7,7 @@ import { TMDB_BASE_URL } from "@next-media/configs/constant";
 import { nanoid } from "nanoid";
 import path from "node:path";
 import fs from "node:fs/promises";
-import { addCacheItem, ensureCacheSpace } from "./lru";
+import { addCacheItem, ensureCacheSpace } from "./lru.js";
 
 const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN!;
 
@@ -28,14 +28,14 @@ interface TmdbMovieResponse {
   vote_count: number;
 }
 
-interface TmdbApiRequestJob {
+export interface TmdbApiRequestJob {
   userId: string;
   libraryPath: string; // 库的根路径, e.g., "/data/movies"
   filePath: string; // 这部电影的原始文件夹名, e.g., "The Matrix 1999"
   movieTitle: string; // 从文件夹名解析出的电影标题
   year: string; // 从文件夹名解析出的年份
 }
-interface RemuxToMp4Job {
+export interface RemuxToMp4Job {
   inputPath: string;
   outputPath: string;
   libraryId: string;
@@ -43,7 +43,7 @@ interface RemuxToMp4Job {
   movieId: string;
 }
 
-interface HlsJob {
+export interface HlsJob {
   inputPath: string;
   outputPath: string;
   libraryId: string;
@@ -213,9 +213,9 @@ export async function getDirectorySize(directoryPath: string) {
 
 function parseTimeToSeconds(timeString: string) {
   const parts = timeString.split(":");
-  const hours = parseFloat(parts[0]);
-  const minutes = parseFloat(parts[1]);
-  const seconds = parseFloat(parts[2]);
+  const hours = parseFloat(parts[0] ?? "0");
+  const minutes = parseFloat(parts[1] ?? "0");
+  const seconds = parseFloat(parts[2] ?? "0");
   return hours * 3600 + minutes * 60 + seconds;
 }
 
@@ -299,6 +299,10 @@ export const tmdbApiRequest = async (job: Job<TmdbApiRequestJob>) => {
       })
       .returning();
     movieRecord = newMovies[0];
+  }
+
+  if (!movieRecord) {
+    throw new Error("Movie record not found");
   }
 
   const existingLink = await db.query.library_movies.findFirst({

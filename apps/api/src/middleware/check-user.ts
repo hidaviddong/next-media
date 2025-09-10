@@ -1,6 +1,6 @@
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
-import type { Variables } from "../type";
+import type { Variables } from "../type.js";
 
 export const checkUser = createMiddleware<{ Variables: Variables }>(
   async (c, next) => {

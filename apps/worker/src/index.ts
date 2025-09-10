@@ -1,5 +1,5 @@
 import { Queue } from "bullmq";
-import IORedis from "ioredis";
+import { Redis } from "ioredis";
 import { env } from "@next-media/configs/env";
 
 const redisConfig = {
@@ -8,7 +8,7 @@ const redisConfig = {
   maxRetriesPerRequest: null,
 };
 
-export const connection = new IORedis(redisConfig);
+export const connection = new Redis(redisConfig);
 
 export const tmdbApiRequestQueue = new Queue("tmdb-api-requests", {
   connection,

@@ -2,7 +2,7 @@ import { and, asc, eq, sum } from "drizzle-orm";
 import { db } from "@next-media/db/db";
 import { cache_item, library } from "@next-media/db/schema";
 import { nanoid } from "nanoid";
-import { hlsQueue, remuxToMp4Queue } from ".";
+import { hlsQueue, remuxToMp4Queue } from "./index.js";
 import path from "node:path";
 import fs from "node:fs/promises";
 
@@ -56,6 +56,9 @@ export async function ensureCacheSpace({
       and(eq(cache_item.libraryId, libraryId), eq(cache_item.userId, userId))
     );
 
+  if (!result[0]) {
+    throw new Error("Cache item not found");
+  }
   // 获取当前缓存文件夹中的所有缓存文件大小
   let currentCacheSize = Number(result[0].total);
   let deleteCount = 0;

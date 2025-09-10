@@ -9,7 +9,9 @@
     "type": "git"
   },
   "scripts": {
-    "dev": "pnpm -r --parallel run dev"
+    "dev": "pnpm --filter \"./apps/**\" --parallel run dev",
+    "build": "pnpm --filter \"./apps/**\" --parallel run build",
+    "start": "echo 'TODO'"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.12",
