@@ -10,8 +10,8 @@
   },
   "scripts": {
     "dev": "pnpm --filter \"./apps/**\" --parallel run dev",
-    "build:packages": "pnpm --filter \"./packages/**\" --parallel run build",
-    "build:app": "pnpm --filter \"./apps/**\" --parallel run build",
+    "build:packages": "pnpm --filter \"./packages/**\" run build",
+    "build:app": "pnpm --filter \"./apps/**\" run build",
     "build": "pnpm run build:packages && pnpm run build:app",
     "start": " pnpm --filter \"./apps/**\" --parallel run start",
     "db:init": "pnpm --filter \"./packages/db\" run db:init"
