@@ -7,8 +7,14 @@
   },
   "exports": {
     "./tsconfig.extend.json": "./tsconfig.extend.json",
-    "./constant": "./dist/constant.js",
-    "./env": "./dist/env.js"
+    "./constant": {
+      "types": "./dist/constant.d.ts",
+      "default": "./dist/constant.js"
+    },
+    "./env": {
+      "types": "./dist/env.d.ts",
+      "default": "./dist/env.js"
+    }
   },
   "dependencies": {
     "dotenv": "^17.2.1"
