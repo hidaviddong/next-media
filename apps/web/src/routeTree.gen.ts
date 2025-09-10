@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as MoviesRouteRouteImport } from './routes/movies/route'
 import { Route as RouteRouteImport } from './routes/route'
 import { Route as MoviesIndexRouteImport } from './routes/movies/index'
-import { Route as MoviesMovieIdRouteImport } from './routes/movies/$movieId'
+import { Route as MoviesTmdbIdRouteImport } from './routes/movies/$tmdbId'
 import { Route as authSignupRouteImport } from './routes/(auth)/signup'
 import { Route as authSigninRouteImport } from './routes/(auth)/signin'
 
@@ -31,9 +31,9 @@ const MoviesIndexRoute = MoviesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => MoviesRouteRoute,
 } as any)
-const MoviesMovieIdRoute = MoviesMovieIdRouteImport.update({
-  id: '/$movieId',
-  path: '/$movieId',
+const MoviesTmdbIdRoute = MoviesTmdbIdRouteImport.update({
+  id: '/$tmdbId',
+  path: '/$tmdbId',
   getParentRoute: () => MoviesRouteRoute,
 } as any)
 const authSignupRoute = authSignupRouteImport.update({
@@ -52,14 +52,14 @@ export interface FileRoutesByFullPath {
   '/movies': typeof MoviesRouteRouteWithChildren
   '/signin': typeof authSigninRoute
   '/signup': typeof authSignupRoute
-  '/movies/$movieId': typeof MoviesMovieIdRoute
+  '/movies/$tmdbId': typeof MoviesTmdbIdRoute
   '/movies/': typeof MoviesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof RouteRoute
   '/signin': typeof authSigninRoute
   '/signup': typeof authSignupRoute
-  '/movies/$movieId': typeof MoviesMovieIdRoute
+  '/movies/$tmdbId': typeof MoviesTmdbIdRoute
   '/movies': typeof MoviesIndexRoute
 }
 export interface FileRoutesById {
@@ -68,7 +68,7 @@ export interface FileRoutesById {
   '/movies': typeof MoviesRouteRouteWithChildren
   '/(auth)/signin': typeof authSigninRoute
   '/(auth)/signup': typeof authSignupRoute
-  '/movies/$movieId': typeof MoviesMovieIdRoute
+  '/movies/$tmdbId': typeof MoviesTmdbIdRoute
   '/movies/': typeof MoviesIndexRoute
 }
 export interface FileRouteTypes {
@@ -78,17 +78,17 @@ export interface FileRouteTypes {
     | '/movies'
     | '/signin'
     | '/signup'
-    | '/movies/$movieId'
+    | '/movies/$tmdbId'
     | '/movies/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/signin' | '/signup' | '/movies/$movieId' | '/movies'
+  to: '/' | '/signin' | '/signup' | '/movies/$tmdbId' | '/movies'
   id:
     | '__root__'
     | '/'
     | '/movies'
     | '/(auth)/signin'
     | '/(auth)/signup'
-    | '/movies/$movieId'
+    | '/movies/$tmdbId'
     | '/movies/'
   fileRoutesById: FileRoutesById
 }
@@ -122,11 +122,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MoviesIndexRouteImport
       parentRoute: typeof MoviesRouteRoute
     }
-    '/movies/$movieId': {
-      id: '/movies/$movieId'
-      path: '/$movieId'
-      fullPath: '/movies/$movieId'
-      preLoaderRoute: typeof MoviesMovieIdRouteImport
+    '/movies/$tmdbId': {
+      id: '/movies/$tmdbId'
+      path: '/$tmdbId'
+      fullPath: '/movies/$tmdbId'
+      preLoaderRoute: typeof MoviesTmdbIdRouteImport
       parentRoute: typeof MoviesRouteRoute
     }
     '/(auth)/signup': {
@@ -147,12 +147,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface MoviesRouteRouteChildren {
-  MoviesMovieIdRoute: typeof MoviesMovieIdRoute
+  MoviesTmdbIdRoute: typeof MoviesTmdbIdRoute
   MoviesIndexRoute: typeof MoviesIndexRoute
 }
 
 const MoviesRouteRouteChildren: MoviesRouteRouteChildren = {
-  MoviesMovieIdRoute: MoviesMovieIdRoute,
+  MoviesTmdbIdRoute: MoviesTmdbIdRoute,
   MoviesIndexRoute: MoviesIndexRoute,
 }
 

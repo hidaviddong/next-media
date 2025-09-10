@@ -48,7 +48,7 @@ const queueSchema = z.object({
 });
 
 const movieStatusSchema = z.object({
-  movieId: z.string(),
+  tmdbId: z.string(),
 });
 
 const watchedSchema = z.object({
@@ -323,7 +323,7 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
     }),
     async (c) => {
       const userId = c.get("user")?.id;
-      const { movieId } = c.req.valid("query");
+      const { tmdbId } = c.req.valid("query");
       const result = await db
         .select({
           path: library_movies.path,
@@ -332,16 +332,26 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         .innerJoin(library, eq(library_movies.libraryId, library.id))
         .innerJoin(movie, eq(library_movies.movieId, movie.id))
         .where(
-          and(eq(library.userId, userId!), eq(movie.tmdbId, Number(movieId)))
+          and(eq(library.userId, userId!), eq(movie.tmdbId, Number(tmdbId)))
         );
 
       if (result.length === 0) {
         throw new HTTPException(404, { message: "Movie not found" });
       }
 
+      // 根据 movieId 找到 movie表的
+
+      const movieRecord = await db.query.movie.findFirst({
+        where: eq(movie.tmdbId, Number(tmdbId)),
+      });
+
+      if (!movieRecord) {
+        throw new HTTPException(404, { message: "Movie not found" });
+      }
+
       const playHistory = await db.query.play_history.findFirst({
         where: and(
-          eq(play_history.movieId, movieId),
+          eq(play_history.movieId, movieRecord.id),
           eq(play_history.userId, userId!)
         ),
       });

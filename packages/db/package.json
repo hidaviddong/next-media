@@ -1,27 +1,27 @@
 {
   "name": "@next-media/db",
-  "type": "module",
   "private": true,
+  "type": "module",
   "exports": {
-    "./schema": "./dist/schema.js",
-    "./db": "./dist/index.js"
+    "./schema": "./dist/src/schema.js",
+    "./db": "./dist/src/index.js"
   },
   "scripts": {
     "build": "tsc",
-    "db:studio": "drizzle-kit studio",
-    "db:push": "drizzle-kit push"
+    "db:studio": "pnpm run build && tsx node_modules/drizzle-kit/bin.cjs studio",
+    "db:push": "pnpm run build && tsx node_modules/drizzle-kit/bin.cjs push"
   },
   "dependencies": {
     "better-sqlite3": "^11.6.0",
     "dotenv": "^17.2.1",
-    "drizzle-orm": "^0.44.4",
-    "mlly": "^1.8.0"
+    "drizzle-orm": "^0.44.4"
   },
   "devDependencies": {
     "@next-media/configs": "workspace:*",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^20",
+    "@types/node": "^20.19.11",
     "drizzle-kit": "^0.31.4",
+    "tsx": "^4.20.5",
     "typescript": "^5.8.3"
   }
 }

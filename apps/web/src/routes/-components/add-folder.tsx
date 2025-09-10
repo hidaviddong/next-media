@@ -102,8 +102,8 @@ export function AddFolderDialog(props: {
         <div className="space-y-4">
           {step === 1 && (
             <div className="space-y-2">
-              <label htmlFor="library" className="text-sm font-medium"></label>
               <div className="flex gap-2">
+                <Label htmlFor="library" className="text-sm font-medium" />
                 <Input
                   id="library"
                   value={libraryPath}

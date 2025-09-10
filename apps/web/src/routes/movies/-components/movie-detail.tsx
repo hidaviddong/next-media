@@ -19,18 +19,20 @@ import { parseAsBoolean, useQueryState } from "nuqs";
 import { toast } from "sonner";
 import { MoviePlayer } from "./movie-player";
 
-export function MovieDetail({ movieId }: { movieId: string }) {
+export function MovieDetail({ tmdbId }: { tmdbId: string }) {
   const [playing, setPlaying] = useQueryState(
     "playing",
     parseAsBoolean.withDefault(false)
   );
   const queryClient = useQueryClient();
-  const { movieByTmdbIdQuery } = useMovieByTmdbId(movieId);
-  const movieRecord = movieByTmdbIdQuery.data?.movie;
+
+  const { movieByTmdbIdQuery } = useMovieByTmdbId(tmdbId);
+  const { movieStatusQuery } = useMovieStatus(tmdbId);
   const { updateCacheItemMutation } = useUpdateCacheItem();
-  const { movieStatusQuery } = useMovieStatus(movieId);
-  const movieStatus = movieStatusQuery.data;
   const { userLibraryQuery } = useUserLibrary();
+
+  const movieRecord = movieByTmdbIdQuery.data?.movie;
+  const movieStatus = movieStatusQuery.data;
   const libraryId = userLibraryQuery.data?.userLibrary?.id ?? "";
 
   return (

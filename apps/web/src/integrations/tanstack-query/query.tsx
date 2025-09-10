@@ -104,12 +104,12 @@ export function useQueueStatus() {
   }
   return { queueStatusQuery };
 }
-export function useMovieStatus(movieId: string) {
+export function useMovieStatus(tmdbId: string) {
   const movieStatusQuery = useQuery({
-    queryKey: [...KEYS.MOVIE_STATUS, movieId],
+    queryKey: [...KEYS.MOVIE_STATUS, tmdbId],
     queryFn: async () => {
       const response = await client.api.movie.movieStatus.$get({
-        query: { movieId },
+        query: { tmdbId },
       });
       return response.json();
     },

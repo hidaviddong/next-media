@@ -22,8 +22,8 @@ export function MovieCard(props: MovieCardProps) {
 
   return (
     <Link
-      to={"/movies/$movieId"}
-      params={{ movieId: movie.tmdbId.toString() }}
+      to={"/movies/$tmdbId"}
+      params={{ tmdbId: movie.tmdbId.toString() }}
       className="group block space-y-2"
     >
       <div className="overflow-hidden rounded-lg relative">

@@ -15,7 +15,6 @@ import type {
 } from "@/integrations/hono/types";
 import { TMDB_IMAGE_BASE_URL } from "@next-media/configs/constant";
 import Hls from "hls.js";
-import { useQueryState } from "nuqs";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { MovieInfo } from "./movie-info";
@@ -97,28 +96,11 @@ export function MoviePlayer({
   const hlsOutputPath = movieHlsQuery.data?.outputPath;
 
   const { moviePlayHistoryMutation } = useMoviePlayHistory();
-  const [playing] = useQueryState("playing");
   const hasJumpedToInitialProgress = useRef(false);
-
-  useEffect(() => {
-    if (!playing) {
-      const currentTime = videoRef.current?.currentTime ?? 0;
-      const duration = videoRef.current?.duration ?? 0;
-      if (movieId && duration > 0 && currentTime > 0) {
-        moviePlayHistoryMutation.mutate({
-          movieId,
-          progress: currentTime,
-          totalTime: duration,
-        });
-      }
-    }
-  }, [playing, moviePlayHistoryMutation.mutate, movieId]);
 
   useEffect(() => {
     const videoElement = videoRef.current;
     if (!videoElement || !movieId) return;
-
-    const reportUrl = "/api/movie/playHistory";
 
     const saveHistoryWithBeacon = () => {
       if (
@@ -131,13 +113,14 @@ export function MoviePlayer({
           progress: videoElement.currentTime,
           totalTime: videoElement.duration,
         };
-
-        // sendBeacon 的 payload 必须是 Blob, BufferSource, FormData 或 URLSearchParams。
+        // 先用 sendBeacon 尝试保证在页面卸载时也能发送
+        const reportUrl = "/api/movie/playHistory";
         const blob = new Blob([JSON.stringify(payload)], {
           type: "application/json",
         });
         navigator.sendBeacon(reportUrl, blob);
-        console.log("Attempted to send play history with sendBeacon:", payload);
+        // 同时也触发 mutation，使得在未卸载的情况下走标准生命周期（含 invalidate）
+        moviePlayHistoryMutation.mutate(payload);
       }
     };
 
@@ -152,7 +135,6 @@ export function MoviePlayer({
   useEffect(() => {
     // 获取 video 元素的稳定引用
     const videoElement = videoRef.current;
-
     if (videoElement && movieType) {
       // 1. 定义事件处理函数
       const handleMetadataLoaded = () => {
