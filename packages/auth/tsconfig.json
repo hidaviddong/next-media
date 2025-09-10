@@ -5,10 +5,7 @@
     "declaration": true,
     "noEmit": false,
     "outDir": "./dist",
-    "rootDir": "./",
-    "paths": {
-      "@next-media/db/*": ["./src/*"]
-    }
+    "rootDir": "./"
   },
   "include": ["src/*"]
 }
