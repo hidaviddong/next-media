@@ -12,11 +12,6 @@ export default defineConfig({
     viteReact(),
     tailwindcss(),
   ],
-  build: {
-    rollupOptions: {
-      external: ["@next-media/auth/client"],
-    },
-  },
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),

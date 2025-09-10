@@ -3,8 +3,8 @@
   "type": "module",
   "private": true,
   "exports": {
-    "./client": "./dist/client.js",
-    "./server": "./dist/server.js"
+    "./client": "./dist/src/client.js",
+    "./server": "./dist/src/server.js"
   },
   "scripts": {
     "build": "tsc"
