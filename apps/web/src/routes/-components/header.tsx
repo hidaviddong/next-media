@@ -13,7 +13,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Icons } from "@next-media/ui/icones.tsx";
 import { GITHUB_REPO_URL } from "@next-media/configs/constant";
 
-export default function MovieHeader() {
+export default function Header() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();

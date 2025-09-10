@@ -1,11 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { hc, type InferRequestType, type InferResponseType } from "hono/client";
 import type { AppType } from "@next-media/api/client";
 import { API_BASE_URL } from "@next-media/configs/constant";
 
-const client = hc<AppType>(API_BASE_URL);
+const client = hc<AppType>(API_BASE_URL, {
+  init: {
+    credentials: "include",
+  },
+});
 
 export type MovieListsRequestType = InferRequestType<
   typeof client.api.movie.lists.$get
@@ -67,6 +71,14 @@ export type MovieWatchedRequestType = InferRequestType<
   typeof client.api.movie.watched.$post
 >["json"];
 
+export type MovieByTmdbIdRequestType = InferRequestType<
+  typeof client.api.movie.byTmdbId.$get
+>;
+
+export type MovieByTmdbIdResponseType = InferResponseType<
+  typeof client.api.movie.byTmdbId.$get
+>;
+
 export type MovieType = MovieInfoResponseType["type"];
 
 export const KEYS = {
@@ -83,6 +95,7 @@ export const KEYS = {
   MOVIE_HLS: ["movieHls"],
   MOVIE_HLS_PROGRESS: ["movieHlsProgress"],
   MOVIE_PLAY_HISTORY: ["moviePlayHistory"],
+  MOVIE_BY_TMDB_ID: ["movieByTmdbId"],
 };
 
 export function useQueueMovies() {
@@ -347,4 +360,36 @@ export function useMovieWatched() {
     },
   });
   return { movieWatchedMutation };
+}
+
+export function useMovieByTmdbId(tmdbId: string) {
+  const movieByTmdbIdQuery = useQuery({
+    queryKey: [...KEYS.MOVIE_BY_TMDB_ID, tmdbId],
+    queryFn: async () => {
+      const response = await client.api.movie.byTmdbId.$get({
+        query: { tmdbId },
+      });
+      return response.json();
+    },
+    enabled: !!tmdbId,
+  });
+  return { movieByTmdbIdQuery };
+}
+
+const MOBILE_BREAKPOINT = 768;
+
+export function useIsMobile() {
+  const [isMobile, setIsMobile] = useState<boolean | undefined>(undefined);
+
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const onChange = () => {
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    };
+    mql.addEventListener("change", onChange);
+    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  return !!isMobile;
 }
