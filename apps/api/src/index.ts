@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { customLogger, authMiddleware } from "./middleware/index.js";
-import { WEB_BASE_URL } from "@next-media/configs/constant";
+import { WEB_BASE_URL, API_PORT } from "@next-media/configs/constant";
 import {
   authRoute,
   scanRoute,
@@ -33,7 +33,7 @@ export const routes = app
 serve(
   {
     fetch: app.fetch,
-    port: 3000,
+    port: API_PORT,
   },
   (info) => {
     console.log(`Server is running on http://localhost:${info.port}`);

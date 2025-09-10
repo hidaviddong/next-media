@@ -9,12 +9,14 @@
   "scripts": {
     "build": "tsc",
     "db:studio": "pnpm run build && tsx node_modules/drizzle-kit/bin.cjs studio",
-    "db:push": "pnpm run build && tsx node_modules/drizzle-kit/bin.cjs push"
+    "db:push": "pnpm run build && tsx node_modules/drizzle-kit/bin.cjs push",
+    "db:init": "pnpm run build && rimraf ./local.db && tsx node_modules/drizzle-kit/bin.cjs push"
   },
   "dependencies": {
     "better-sqlite3": "^11.6.0",
     "dotenv": "^17.2.1",
-    "drizzle-orm": "^0.44.4"
+    "drizzle-orm": "^0.44.4",
+    "rimraf": "^6.0.1"
   },
   "devDependencies": {
     "@next-media/configs": "workspace:*",

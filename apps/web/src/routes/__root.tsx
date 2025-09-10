@@ -8,28 +8,30 @@ import type { QueryClient } from "@tanstack/react-query";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 
 interface MyRouterContext {
-	queryClient: QueryClient;
+  queryClient: QueryClient;
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-	component: () => (
-		<>
-			<NuqsAdapter>
-				<Outlet />
-			</NuqsAdapter>
-			<TanstackDevtools
-				config={{
-					position: "bottom-left",
-				}}
-				plugins={[
-					{
-						name: "Tanstack Router",
-						render: <TanStackRouterDevtoolsPanel />,
-					},
-					TanStackQueryDevtools,
-				]}
-			/>
-			<Toaster position="top-center" richColors />
-		</>
-	),
+  component: () => (
+    <>
+      <NuqsAdapter>
+        <Outlet />
+      </NuqsAdapter>
+      {import.meta.env.DEV && (
+        <TanstackDevtools
+          config={{
+            position: "bottom-left",
+          }}
+          plugins={[
+            {
+              name: "Tanstack Router",
+              render: <TanStackRouterDevtoolsPanel />,
+            },
+            TanStackQueryDevtools,
+          ]}
+        />
+      )}
+      <Toaster position="top-center" richColors />
+    </>
+  ),
 });
