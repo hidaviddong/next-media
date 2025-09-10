@@ -1,8 +1,8 @@
+import { useMovieLists } from "@/integrations/tanstack-query/query";
 import { MovieCard } from "./movie-card";
 import { MovieSkeletonGrid } from "./movie-skeleton";
-import { useMovieLists } from "@/utils";
 
-export default function MovieLists() {
+export function MovieList() {
   const { movieListsQuery } = useMovieLists();
   const movies = movieListsQuery.data;
 

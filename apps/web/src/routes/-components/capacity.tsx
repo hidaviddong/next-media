@@ -1,4 +1,7 @@
-import { useUserLibrary, useUserLibraryCapacity } from "@/utils";
+import {
+  useUserLibrary,
+  useUserLibraryCapacity,
+} from "@/integrations/tanstack-query/query";
 import { Badge } from "@next-media/ui/badge.tsx";
 
 import {
@@ -7,7 +10,7 @@ import {
   TooltipTrigger,
 } from "@next-media/ui/tooltip.tsx";
 
-export default function Capacity() {
+export function Capacity() {
   const { userLibraryQuery } = useUserLibrary();
   const { userLibraryCapacityQuery } = useUserLibraryCapacity(
     userLibraryQuery.data?.userLibrary?.path ?? ""
@@ -31,7 +34,12 @@ export default function Capacity() {
         <TooltipTrigger asChild>
           <Badge variant="outline" className="[&>svg]:!w-5 [&>svg]:!h-5">
             <span className="text-neutral-500">{capacity}%</span>
-            <svg className="transform -rotate-90" viewBox="0 0 48 48">
+            <svg
+              aria-label="Capacity"
+              className="transform -rotate-90"
+              viewBox="0 0 48 48"
+            >
+              <title>Capacity</title>
               {/* 背景圆环 */}
               <circle
                 cx="24"

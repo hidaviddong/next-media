@@ -1,15 +1,15 @@
-import { Link } from "@tanstack/react-router";
-import { AspectRatio } from "@next-media/ui/aspect-ratio.tsx";
+import type { MovieListsResponseType } from "@/integrations/hono/types";
+import { useMovieWatched } from "@/integrations/tanstack-query/query";
 import { TMDB_IMAGE_BASE_URL } from "@next-media/configs/constant";
-import type { MovieListsResponseType } from "@/utils";
-import { Check, MoreVertical, Eye, EyeOff } from "lucide-react";
+import { AspectRatio } from "@next-media/ui/aspect-ratio.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@next-media/ui/dropdown-menu.tsx";
-import { useMovieWatched } from "@/utils";
+import { Link } from "@tanstack/react-router";
+import { Check, Eye, EyeOff, MoreVertical } from "lucide-react";
 
 interface MovieCardProps {
   movie: MovieListsResponseType[number];
@@ -42,7 +42,10 @@ export function MovieCard(props: MovieCardProps) {
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-full bg-black/50 hover:bg-black/70 text-white z-10">
+            <button
+              type="button"
+              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-full bg-black/50 hover:bg-black/70 text-white z-10"
+            >
               <MoreVertical className="w-4 h-4" />
             </button>
           </DropdownMenuTrigger>

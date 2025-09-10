@@ -1,6 +1,5 @@
-import React from "react";
-import { Message, MessageContent } from "@next-media/ui/message.tsx";
 import { Badge } from "@next-media/ui/badge.tsx";
+import { Message, MessageContent } from "@next-media/ui/message.tsx";
 import {
   Sheet,
   SheetContent,
@@ -9,32 +8,33 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@next-media/ui/sheet.tsx";
+import type React from "react";
 
 import {
   PromptInput,
-  PromptInputTextarea,
   PromptInputSubmit,
+  PromptInputTextarea,
 } from "@next-media/ui/prompt-input.tsx";
 
 import { Sparkles } from "lucide-react";
 
+import { useIsMobile } from "@/integrations/hooks/use-ismobile";
+import { useChat } from "@ai-sdk/react";
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
 } from "@next-media/ui/conversation.tsx";
-import { useEffect, useState } from "react";
-import { useChat } from "@ai-sdk/react";
-import { Response } from "@next-media/ui/response.tsx";
-import { DefaultChatTransport } from "ai";
+import { Kbd, KbdKey } from "@next-media/ui/kbd.tsx";
 import { Loader } from "@next-media/ui/loader.tsx";
+import { Response } from "@next-media/ui/response.tsx";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@next-media/ui/tooltip.tsx";
-import { Kbd, KbdKey } from "@next-media/ui/kbd.tsx";
-import { useIsMobile } from "@/utils";
+import { DefaultChatTransport } from "ai";
+import { useEffect, useState } from "react";
 
 interface MovieContext {
   name: string;
@@ -49,7 +49,7 @@ interface MovieChatProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
 }
 
-export default function MovieChat({ movieContext, videoRef }: MovieChatProps) {
+export function MovieChat({ movieContext, videoRef }: MovieChatProps) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const isMobile = useIsMobile();

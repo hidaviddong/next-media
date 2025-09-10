@@ -1,23 +1,23 @@
-import { AspectRatio } from "@next-media/ui/aspect-ratio.tsx";
-import { Calendar, MoveLeftIcon, Play } from "lucide-react";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@next-media/ui/tooltip.tsx";
-import { Button } from "@next-media/ui/button.tsx";
-import { useQueryState, parseAsBoolean } from "nuqs";
-import MoviePlayer from "./movie-player";
-import { TMDB_IMAGE_BASE_URL } from "@next-media/configs/constant";
 import {
   useMovieByTmdbId,
   useMovieStatus,
   useUpdateCacheItem,
   useUserLibrary,
-} from "@/utils";
-import { toast } from "sonner";
+} from "@/integrations/tanstack-query/query";
+import { TMDB_IMAGE_BASE_URL } from "@next-media/configs/constant";
+import { AspectRatio } from "@next-media/ui/aspect-ratio.tsx";
+import { Button } from "@next-media/ui/button.tsx";
 import { Progress } from "@next-media/ui/progress.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@next-media/ui/tooltip.tsx";
 import { useQueryClient } from "@tanstack/react-query";
+import { Calendar, MoveLeftIcon, Play } from "lucide-react";
+import { parseAsBoolean, useQueryState } from "nuqs";
+import { toast } from "sonner";
+import { MoviePlayer } from "./movie-player";
 
 export function MovieDetail({ movieId }: { movieId: string }) {
   const [playing, setPlaying] = useQueryState(
@@ -40,6 +40,11 @@ export function MovieDetail({ movieId }: { movieId: string }) {
           <div
             className="w-8 h-8 rounded-md overflow-hidden cursor-pointer"
             onClick={() => setPlaying(false)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setPlaying(false);
+              }
+            }}
           >
             {movieRecord?.poster && (
               <Tooltip>

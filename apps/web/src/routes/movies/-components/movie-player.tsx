@@ -1,25 +1,25 @@
-import Hls from "hls.js";
-import { TMDB_IMAGE_BASE_URL } from "@next-media/configs/constant";
-import { toast } from "sonner";
-import MovieInfo from "./movie-info";
 import {
-  useMovieInfo,
-  useMovieRemux,
-  useMovieSubtitleLists,
-  useMovieRemuxProgress,
   useMovieHls,
   useMovieHlsProgress,
+  useMovieInfo,
   useMoviePlayHistory,
+  useMovieRemux,
+  useMovieRemuxProgress,
+  useMovieSubtitleLists,
   useUserLibrary,
-} from "@/utils";
-import { useEffect, useRef } from "react";
-import { MovieProgress } from "./movie-progress";
-import { useQueryState } from "nuqs";
+} from "@/integrations/tanstack-query/query";
 import type {
   MovieStatusResponseType,
   PlayHistoryRequestType,
   SubtitleListsResponseType,
-} from "@/utils";
+} from "@/integrations/hono/types";
+import { TMDB_IMAGE_BASE_URL } from "@next-media/configs/constant";
+import Hls from "hls.js";
+import { useQueryState } from "nuqs";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { MovieInfo } from "./movie-info";
+import { MovieProgress } from "./movie-progress";
 
 function getDirname(path: string) {
   const lastSlashIndex = path.lastIndexOf("/");
@@ -33,14 +33,16 @@ function getSubtitleSrc(
 ) {
   const params = new URLSearchParams({ moviePath });
   if (track.type === "embedded") {
-    params.set("index", track.index!.toString());
+    params.set("index", track.index?.toString() ?? "");
   } else {
-    params.set("externalPath", track.path!);
+    if (track.path) {
+      params.set("externalPath", track.path);
+    }
   }
   return `/api/movie/subtitle?${params.toString()}`;
 }
 
-export default function MoviePlayer({
+export function MoviePlayer({
   movieStatus,
   posterPath,
   movieId,
@@ -110,8 +112,7 @@ export default function MoviePlayer({
         });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing]);
+  }, [playing, moviePlayHistoryMutation.mutate, movieId]);
 
   useEffect(() => {
     const videoElement = videoRef.current;
@@ -121,7 +122,7 @@ export default function MoviePlayer({
 
     const saveHistoryWithBeacon = () => {
       if (
-        !isNaN(videoElement.duration) &&
+        !Number.isNaN(videoElement.duration) &&
         videoElement.duration > 0 &&
         videoElement.currentTime > 0
       ) {
@@ -196,7 +197,7 @@ export default function MoviePlayer({
                 if (Hls.isSupported()) {
                   if (!hlsRef.current) {
                     hlsRef.current = new Hls();
-                    hlsRef.current.on(Hls.Events.ERROR, function (event, data) {
+                    hlsRef.current.on(Hls.Events.ERROR, (_, data) => {
                       console.error("HLS.js Error:", data);
                       if (data.fatal) {
                         switch (data.type) {
@@ -253,16 +254,14 @@ export default function MoviePlayer({
         }
       };
     }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    movieStatus.path,
+    movieStatus,
     movieType,
     remuxProgress,
     hlsProgress,
     remuxOutputPath,
     hlsOutputPath,
-    movieId,
+    isSafari,
   ]);
 
   if (remuxProgress < 100) {
@@ -295,21 +294,20 @@ export default function MoviePlayer({
           }}
           poster={`${TMDB_IMAGE_BASE_URL}${posterPath}`}
         >
-          {movieSubtitleLists &&
-            movieSubtitleLists.map((track, i) => (
-              <track
-                key={
-                  track.type === "embedded"
-                    ? `embed-${track.index}`
-                    : `ext-${track.path}`
-                }
-                src={getSubtitleSrc(movieStatus.path, track)}
-                kind="subtitles"
-                srcLang={track.lang || "und"}
-                label={track.title || `Subtitle ${i + 1}`}
-                default={i === 0}
-              />
-            ))}
+          {movieSubtitleLists?.map((track, i) => (
+            <track
+              key={
+                track.type === "embedded"
+                  ? `embed-${track.index}`
+                  : `ext-${track.path}`
+              }
+              src={getSubtitleSrc(movieStatus.path, track)}
+              kind="subtitles"
+              srcLang={track.lang || "und"}
+              label={track.title || `Subtitle ${i + 1}`}
+              default={i === 0}
+            />
+          ))}
           Your browser does not support the video tag.
         </video>
       </div>

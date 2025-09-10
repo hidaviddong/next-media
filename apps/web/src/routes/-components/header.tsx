@@ -1,4 +1,6 @@
-import { ChevronsUpDown, LogOut } from "lucide-react";
+import { authClient } from "@next-media/auth/client";
+import { GITHUB_REPO_URL } from "@next-media/configs/constant";
+import { Avatar, AvatarFallback } from "@next-media/ui/avatar.tsx";
 import { Button } from "@next-media/ui/button.tsx";
 import {
   DropdownMenu,
@@ -6,14 +8,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@next-media/ui/dropdown-menu.tsx";
-import { Avatar, AvatarFallback } from "@next-media/ui/avatar.tsx";
-import { authClient } from "@next-media/auth/client";
+import { Icons } from "@next-media/ui/icones.tsx";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Icons } from "@next-media/ui/icones.tsx";
-import { GITHUB_REPO_URL } from "@next-media/configs/constant";
+import { ChevronsUpDown, LogOut } from "lucide-react";
 
-export default function Header() {
+export function Header() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();

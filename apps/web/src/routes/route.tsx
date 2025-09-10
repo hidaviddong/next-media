@@ -1,15 +1,14 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { authClient } from "@next-media/auth/client";
-import Header from "./-components/header";
+import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
+import { Header } from "./-components";
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
     const session = await authClient.getSession();
     if (!session.data) {
       throw redirect({ to: "/signin" });
-    } else {
-      throw redirect({ to: "/movies" });
     }
+    throw redirect({ to: "/movies" });
   },
   component: LayoutComponent,
 });

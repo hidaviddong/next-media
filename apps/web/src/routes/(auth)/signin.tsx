@@ -1,3 +1,7 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { authClient } from "@next-media/auth/client";
+import { WEB_BASE_URL } from "@next-media/configs/constant";
+import { Button } from "@next-media/ui/button.tsx";
 import {
   Card,
   CardContent,
@@ -5,10 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@next-media/ui/card.tsx";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { Button } from "@next-media/ui/button.tsx";
 import {
   Form,
   FormControl,
@@ -18,13 +18,13 @@ import {
   FormMessage,
 } from "@next-media/ui/form.tsx";
 import { Input } from "@next-media/ui/input.tsx";
-import { authClient } from "@next-media/auth/client";
-import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
-import { Loader2Icon } from "lucide-react";
-import { WEB_BASE_URL } from "@next-media/configs/constant";
 import { Link } from "@tanstack/react-router";
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Loader2Icon } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod/v3";
 
 export const Route = createFileRoute("/(auth)/signin")({
   component: SignIn,
@@ -39,13 +39,10 @@ export const Route = createFileRoute("/(auth)/signin")({
 });
 
 const signInSchema = z.object({
-  email: z.email({
-    error: "Invalid email address",
-  }),
-  password: z.string().min(6, {
-    error: "Password must be at least 6 characters",
-  }),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
+
 type SignInFormValues = z.infer<typeof signInSchema>;
 
 export default function SignIn() {

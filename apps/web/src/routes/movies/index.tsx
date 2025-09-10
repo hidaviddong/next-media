@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import MovieList from "./-components/movie-list";
-import QueueStatus from "../-components/queue-status";
-import SearchCommand from "../-components/search-command";
-import AddFolder from "../-components/add-folder";
+import { AddFolder, QueueStatus, SearchCommand } from "../-components";
+import { MovieList } from "./-components/movie-list";
 
 export const Route = createFileRoute("/movies/")({
   component: Movies,

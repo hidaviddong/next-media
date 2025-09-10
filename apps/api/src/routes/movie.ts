@@ -95,6 +95,10 @@ const updateCacheItemSchema = z.object({
   libraryId: z.string(),
 });
 
+const movieByTmdbIdSchema = z.object({
+  tmdbId: z.string(),
+});
+
 export const movieRoute = new Hono<{ Variables: Variables }>()
   .use(async (c, next) => {
     const userId = c.get("user")?.id;
@@ -120,6 +124,53 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
 
     return c.json(userMovies);
   })
+  .get(
+    "/byTmdbId",
+    zValidator("query", movieByTmdbIdSchema, (result) => {
+      if (!result.success) {
+        throw new HTTPException(400, { message: "Invalid Request" });
+      }
+    }),
+    async (c) => {
+      const userId = c.get("user")?.id;
+      const { tmdbId } = c.req.valid("query");
+
+      const movieRecord = await db.query.movie.findFirst({
+        where: eq(movie.tmdbId, Number(tmdbId)),
+      });
+
+      if (!movieRecord) {
+        throw new HTTPException(404, { message: "Movie not found" });
+      }
+
+      // Check if user has access to this movie
+      const userMovieAccess = await db
+        .select({
+          path: library_movies.path,
+          isWatched: library_movies.isWatched,
+          libraryId: library.id,
+        })
+        .from(library_movies)
+        .innerJoin(library, eq(library_movies.libraryId, library.id))
+        .innerJoin(movie, eq(library_movies.movieId, movie.id))
+        .where(
+          and(eq(library.userId, userId!), eq(movie.tmdbId, Number(tmdbId)))
+        );
+
+      if (userMovieAccess.length === 0) {
+        throw new HTTPException(403, {
+          message: "Access denied: Movie not found in user's library",
+        });
+      }
+
+      return c.json({
+        movie: movieRecord,
+        path: userMovieAccess[0].path,
+        isWatched: userMovieAccess[0].isWatched,
+        libraryId: userMovieAccess[0].libraryId,
+      });
+    }
+  )
   .post(
     "/queue",
     zValidator("json", queueSchema, (result) => {
@@ -280,7 +331,9 @@ export const movieRoute = new Hono<{ Variables: Variables }>()
         .from(library_movies)
         .innerJoin(library, eq(library_movies.libraryId, library.id))
         .innerJoin(movie, eq(library_movies.movieId, movie.id))
-        .where(and(eq(library.userId, userId!), eq(movie.id, movieId)));
+        .where(
+          and(eq(library.userId, userId!), eq(movie.tmdbId, Number(movieId)))
+        );
 
       if (result.length === 0) {
         throw new HTTPException(404, { message: "Movie not found" });

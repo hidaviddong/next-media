@@ -1,15 +1,16 @@
+import { useQueueStatus } from "@/integrations/tanstack-query/query";
+import type { QueueStatusResponseType } from "@/integrations/hono/types";
+import { cn } from "@next-media/ui/utils/index.ts";
 import {
-  Loader2,
-  Clock,
-  CheckCircle,
-  XCircle,
   Brain,
+  CheckCircle,
   ChevronDown,
   ChevronUp,
+  Clock,
+  Loader2,
+  XCircle,
 } from "lucide-react";
-import { cn } from "@next-media/ui/utils/index.ts";
 import { useState } from "react";
-import { useQueueStatus, type QueueStatusResponseType } from "@/utils";
 
 const getStatusConfig = (type: keyof QueueStatusResponseType["stats"]) => {
   switch (type) {
@@ -56,7 +57,7 @@ const getStatusConfig = (type: keyof QueueStatusResponseType["stats"]) => {
   }
 };
 
-export default function QueueStatus() {
+export function QueueStatus() {
   const [isExpanded, setIsExpanded] = useState(false);
   const { queueStatusQuery } = useQueueStatus();
 
@@ -120,6 +121,7 @@ export default function QueueStatus() {
         </div>
 
         <button
+          type="button"
           onClick={() => setIsExpanded(!isExpanded)}
           className="ml-2 p-1 rounded-md hover:bg-gray-100/50 transition-colors"
         >

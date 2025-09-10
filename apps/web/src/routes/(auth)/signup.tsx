@@ -1,4 +1,6 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { authClient } from "@next-media/auth/client";
+import { Button } from "@next-media/ui/button.tsx";
 import {
   Card,
   CardContent,
@@ -6,10 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@next-media/ui/card.tsx";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { Button } from "@next-media/ui/button.tsx";
 import {
   Form,
   FormControl,
@@ -20,29 +18,29 @@ import {
 } from "@next-media/ui/form.tsx";
 import { Input } from "@next-media/ui/input.tsx";
 import { useMutation } from "@tanstack/react-query";
-import { authClient } from "@next-media/auth/client";
-import { toast } from "sonner";
-import { Loader2Icon } from "lucide-react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { Loader2Icon } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod/v3";
 
 const signUpSchema = z
   .object({
     username: z
       .string()
       .min(2, {
-        error: "Username must be at least 2 characters",
+        message: "Username must be at least 2 characters",
       })
       .max(50, {
-        error: "Username must be at most 50 characters",
+        message: "Username must be at most 50 characters",
       }),
-    email: z.email({
-      error: "Invalid email address",
-    }),
+    email: z.string().email("Invalid email address"),
     password: z.string().min(6, {
-      error: "Password must be at least 6 characters",
+      message: "Password must be at least 6 characters",
     }),
     confirmPassword: z.string().min(6, {
-      error: "Password must be at least 6 characters",
+      message: "Password must be at least 6 characters",
     }),
   })
   .refine((data) => data.password === data.confirmPassword, {

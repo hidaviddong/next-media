@@ -1,23 +1,28 @@
-import { Loader2, Plus, RefreshCcw } from "lucide-react";
-// import AddFolderDialog from "./add-folder-dialog";
+import {
+  useQueueMovies,
+  useScanMovies,
+  useUserLibrary,
+} from "@/integrations/tanstack-query/query";
 import { Button } from "@next-media/ui/button.tsx";
-import { useQueueMovies, useScanMovies, useUserLibrary } from "@/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@next-media/ui/tooltip.tsx";
-import Capacity from "./capacity";
+import { Loader2, Plus, RefreshCcw } from "lucide-react";
+import { Capacity } from "./capacity";
 
-export default function AddFolder() {
+export function AddFolder() {
   const { userLibraryQuery } = useUserLibrary();
 
   const scanMovies = useScanMovies();
   const queueMovies = useQueueMovies();
 
+  const userLibrary = userLibraryQuery.data?.userLibrary;
+
   return (
     <>
-      {userLibraryQuery.data?.userLibrary ? (
+      {userLibrary ? (
         <div className="flex items-center justify-end gap-2">
           <Capacity />
           <Tooltip>
@@ -26,7 +31,7 @@ export default function AddFolder() {
                 disabled={scanMovies.isPending || queueMovies.isPending}
                 variant="ghost"
                 onClick={() => {
-                  const libraryPath = userLibraryQuery.data.userLibrary!.path;
+                  const libraryPath = userLibrary.path;
                   scanMovies.mutate(
                     {
                       libraryPath,
@@ -71,7 +76,6 @@ export default function AddFolder() {
               <p>Add Folder</p>
             </TooltipContent>
           </Tooltip>
-          {/* <AddFolderDialog /> */}
         </div>
       )}
     </>

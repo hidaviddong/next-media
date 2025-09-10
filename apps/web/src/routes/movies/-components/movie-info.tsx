@@ -1,16 +1,7 @@
-"use client";
-import React from "react";
-import { useMovieInfo, useMovieLists } from "@/utils";
 import {
-  AudioWaveform,
-  Gauge,
-  HardDrive,
-  Replace,
-  ServerCog,
-  Video,
-  Zap,
-  Captions,
-} from "lucide-react";
+  useMovieInfo,
+  useMovieLists,
+} from "@/integrations/tanstack-query/query";
 import { Badge } from "@next-media/ui/badge.tsx";
 import {
   Tooltip,
@@ -18,22 +9,33 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@next-media/ui/tooltip.tsx";
-import MovieChat from "./movie-chat";
+import {
+  AudioWaveform,
+  Captions,
+  Gauge,
+  HardDrive,
+  Replace,
+  ServerCog,
+  Video,
+  Zap,
+} from "lucide-react";
+import type { RefObject } from "react";
+import { MovieChat } from "./movie-chat";
 
-function formatSize(bytes: number = 0) {
+function formatSize(bytes = 0) {
   if (bytes === 0) return "0 B";
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB", "TB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  return `${Number.parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 }
 
-function formatBitrate(bits: number = 0) {
+function formatBitrate(bits = 0) {
   if (bits === 0) return "0 bps";
   const k = 1000;
   const sizes = ["bps", "kbps", "Mbps", "Gbps"];
   const i = Math.floor(Math.log(bits) / Math.log(k));
-  return parseFloat((bits / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  return `${Number.parseFloat((bits / k ** i).toFixed(1))} ${sizes[i]}`;
 }
 
 const playbackTypeConfig = {
@@ -61,12 +63,12 @@ const playbackTypeConfig = {
   },
 };
 
-export default function MovieInfo({
+export function MovieInfo({
   moviePath,
   videoRef,
 }: {
   moviePath: string;
-  videoRef: React.RefObject<HTMLVideoElement | null>;
+  videoRef: RefObject<HTMLVideoElement | null>;
 }) {
   const { movieListsQuery } = useMovieLists();
   const currentMovie = movieListsQuery.data?.find(
@@ -87,8 +89,10 @@ export default function MovieInfo({
   const audioStream = streams.find((s) => s.codec_type === "audio");
   const subtitleStreams = streams.filter((s) => s.codec_type === "subtitle");
   const displayInfo = {
-    size: format.size ? formatSize(parseInt(format.size)) : null,
-    bitrate: format.bit_rate ? formatBitrate(parseInt(format.bit_rate)) : null,
+    size: format.size ? formatSize(Number.parseInt(format.size)) : null,
+    bitrate: format.bit_rate
+      ? formatBitrate(Number.parseInt(format.bit_rate))
+      : null,
     container: format.format_name?.split(",")[0],
 
     // 视频信息
@@ -112,7 +116,7 @@ export default function MovieInfo({
   return (
     <div className="mt-4 flex items-center justify-start flex-wrap gap-x-3 gap-y-2 text-xs text-muted-foreground">
       {isMovieInfoLoading && (
-        <div className="h-6 bg-gray-200 rounded-md dark:bg-gray-700 animate-pulse w-full max-w-md"></div>
+        <div className="h-6 bg-gray-200 rounded-md dark:bg-gray-700 animate-pulse w-full max-w-md" />
       )}
 
       {displayInfo && (

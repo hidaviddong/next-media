@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useMovieLists } from "@/integrations/tanstack-query/query";
+import { TMDB_IMAGE_BASE_URL } from "@next-media/configs/constant";
+import { Avatar, AvatarFallback, AvatarImage } from "@next-media/ui/avatar.tsx";
 import {
   CommandDialog,
   CommandEmpty,
@@ -7,14 +9,12 @@ import {
   CommandItem,
   CommandList,
 } from "@next-media/ui/command.tsx";
-import { Avatar, AvatarFallback, AvatarImage } from "@next-media/ui/avatar.tsx";
-import { useMovieLists } from "@/utils";
-import { useNavigate } from "@tanstack/react-router";
-import { TMDB_IMAGE_BASE_URL } from "@next-media/configs/constant";
-import { Check } from "lucide-react";
 import { cn } from "@next-media/ui/utils/index.ts";
+import { useNavigate } from "@tanstack/react-router";
+import { Check } from "lucide-react";
+import { useEffect, useState } from "react";
 
-export default function SearchCommand() {
+export function SearchCommand() {
   const { movieListsQuery } = useMovieLists();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
