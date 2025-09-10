@@ -54,9 +54,9 @@ export const Route = createFileRoute("/(auth)/signup")({
   component: SignUp,
   beforeLoad: async (_ctx) => {
     const session = await authClient.getSession();
-    if (!session.data) {
+    if (session.data) {
       throw redirect({
-        to: "/signin",
+        to: "/",
       });
     }
   },
