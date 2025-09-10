@@ -3,14 +3,14 @@
   "type": "module",
   "private": true,
   "exports": {
-    "./queue": "./src/index.ts",
-    "./utils": "./src/utils.ts",
-    "./lru": "./src/lru.ts"
+    "./queue": "./dist/index.js",
+    "./utils": "./dist/utils.js",
+    "./lru": "./dist/lru.js"
   },
   "scripts": {
     "dev": "tsx ./src/worker.ts",
     "build": "tsc",
-    "start": "node dist/worker.js"
+    "start": "node ./dist/worker.js"
   },
   "dependencies": {
     "@next-media/configs": "workspace:*",

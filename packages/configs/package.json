@@ -2,12 +2,18 @@
   "name": "@next-media/configs",
   "type": "module",
   "private": true,
+  "scripts": {
+    "build": "tsc"
+  },
   "exports": {
     "./tsconfig.extend.json": "./tsconfig.extend.json",
-    "./constant": "./src/constant.ts",
-    "./env": "./src/env.ts"
+    "./constant": "./dist/constant.js",
+    "./env": "./dist/env.js"
   },
   "dependencies": {
     "dotenv": "^17.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
   }
 }

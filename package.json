@@ -10,8 +10,8 @@
   },
   "scripts": {
     "dev": "pnpm --filter \"./apps/**\" --parallel run dev",
-    "build": "pnpm --filter \"./apps/**\" --parallel run build",
-    "start": "echo 'TODO'"
+    "build": "pnpm --parallel run build",
+    "start": " pnpm --filter \"./apps/**\" --parallel run start"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.12",

@@ -1,6 +1,6 @@
 import { Worker } from "bullmq";
-import { connection } from "./index";
-import { hls, remuxToMp4, tmdbApiRequest } from "./utils";
+import { connection } from "./index.js";
+import { hls, remuxToMp4, tmdbApiRequest } from "./utils.js";
 
 export const tmdbApiRequestWorker = new Worker(
   "tmdb-api-requests",

@@ -3,6 +3,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "declaration": true,
+    "noEmit": false,
+    "outDir": "./dist",
+    "rootDir": "./src",
     "paths": {
       "@next-media/db/*": ["./src/*"]
     }

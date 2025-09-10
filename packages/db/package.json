@@ -3,10 +3,11 @@
   "type": "module",
   "private": true,
   "exports": {
-    "./schema": "./src/schema.ts",
-    "./db": "./src/index.ts"
+    "./schema": "./dist/schema.js",
+    "./db": "./dist/index.js"
   },
   "scripts": {
+    "build": "tsc",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push"
   },
@@ -20,6 +21,7 @@
     "@next-media/configs": "workspace:*",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
-    "drizzle-kit": "^0.31.4"
+    "drizzle-kit": "^0.31.4",
+    "typescript": "^5.8.3"
   }
 }

@@ -237,12 +237,19 @@ importers:
       drizzle-kit:
         specifier: ^0.31.4
         version: 0.31.4
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.2
 
   packages/configs:
     dependencies:
       dotenv:
         specifier: ^17.2.1
         version: 17.2.1
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.2
 
   packages/db:
     dependencies:
@@ -271,6 +278,9 @@ importers:
       drizzle-kit:
         specifier: ^0.31.4
         version: 0.31.4
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.2
 
   packages/ui:
     dependencies:
