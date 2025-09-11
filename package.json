@@ -13,7 +13,7 @@
     "build:packages": "pnpm --filter \"./packages/**\" run build",
     "build:app": "pnpm --filter \"./apps/**\" run build",
     "build": "pnpm run build:packages && pnpm run build:app",
-    "start": " pnpm --filter \"./apps/**\" --parallel run start",
+    "start": "pnpm run build && pm2 start ecosystem.config.cjs",
     "db:init": "pnpm --filter \"./packages/db\" run db:init"
   },
   "devDependencies": {
@@ -22,5 +22,8 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13"
   },
-  "packageManager": "pnpm@10.15.1+sha512.34e538c329b5553014ca8e8f4535997f96180a1d0f614339357449935350d924e22f8614682191264ec33d1462ac21561aff97f6bb18065351c162c7e8f6de67"
+  "packageManager": "pnpm@10.15.1+sha512.34e538c329b5553014ca8e8f4535997f96180a1d0f614339357449935350d924e22f8614682191264ec33d1462ac21561aff97f6bb18065351c162c7e8f6de67",
+  "dependencies": {
+    "pm2": "^6.0.10"
+  }
 }
