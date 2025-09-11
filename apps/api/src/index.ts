@@ -16,6 +16,7 @@ import type { Variables } from "./type.js";
 const app = new Hono<{ Variables: Variables }>().basePath("/api");
 
 export const routes = app
+  .get("/health", (c) => c.json({ message: "OK" }))
   .use(
     cors({
       origin: WEB_BASE_URL,
