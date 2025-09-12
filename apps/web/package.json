@@ -21,6 +21,7 @@
     "@tanstack/react-router": "^1.130.2",
     "@tanstack/react-router-devtools": "^1.131.5",
     "@tanstack/router-plugin": "^1.121.2",
+    "@unhead/react": "^2.0.14",
     "ai": "^5.0.26",
     "hls.js": "^1.6.10",
     "hono": "^4.9.6",
