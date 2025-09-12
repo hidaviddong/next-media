@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Calendar, MoveLeftIcon, Play } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { toast } from "sonner";
+import { useEffect } from "react";
 import { MoviePlayer } from "./movie-player";
 
 export function MovieDetail({ tmdbId }: { tmdbId: string }) {
@@ -34,6 +35,121 @@ export function MovieDetail({ tmdbId }: { tmdbId: string }) {
   const movieRecord = movieByTmdbIdQuery.data?.movie;
   const movieStatus = movieStatusQuery.data;
   const libraryId = userLibraryQuery.data?.userLibrary?.id ?? "";
+
+  // 动态更新页面head信息
+  useEffect(() => {
+    if (movieRecord) {
+      const title = `${movieRecord.name} (${movieRecord.year}) - NextMedia`;
+      const description =
+        movieRecord.overview || `Watch ${movieRecord.name} on NextMedia`;
+      const imageUrl = movieRecord.poster
+        ? `${TMDB_IMAGE_BASE_URL}${movieRecord.poster}`
+        : "/logo192.png";
+
+      // 更新页面标题
+      document.title = title;
+
+      // 更新favicon为电影海报
+      const updateFavicon = (imageUrl: string) => {
+        // 移除现有的favicon链接
+        const existingFavicon = document.querySelector(
+          'link[rel="icon"]'
+        ) as HTMLLinkElement;
+        if (existingFavicon) {
+          existingFavicon.remove();
+        }
+
+        // 创建新的favicon链接
+        const favicon = document.createElement("link");
+        favicon.rel = "icon";
+        favicon.type = "image/png";
+        favicon.href = imageUrl;
+        document.head.appendChild(favicon);
+
+        // 同时更新apple-touch-icon
+        const existingAppleIcon = document.querySelector(
+          'link[rel="apple-touch-icon"]'
+        ) as HTMLLinkElement;
+        if (existingAppleIcon) {
+          existingAppleIcon.remove();
+        }
+
+        const appleIcon = document.createElement("link");
+        appleIcon.rel = "apple-touch-icon";
+        appleIcon.href = imageUrl;
+        document.head.appendChild(appleIcon);
+      };
+
+      // 更新favicon
+      updateFavicon(imageUrl);
+
+      // 更新或创建meta标签
+      const updateMetaTag = (
+        property: string,
+        content: string,
+        isProperty = false
+      ) => {
+        const selector = isProperty
+          ? `meta[property="${property}"]`
+          : `meta[name="${property}"]`;
+        let meta = document.querySelector(selector) as HTMLMetaElement;
+
+        if (!meta) {
+          meta = document.createElement("meta");
+          if (isProperty) {
+            meta.setAttribute("property", property);
+          } else {
+            meta.setAttribute("name", property);
+          }
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute("content", content);
+      };
+
+      // 更新所有相关的meta标签
+      updateMetaTag("description", description);
+      updateMetaTag("og:title", title, true);
+      updateMetaTag("og:description", description, true);
+      updateMetaTag("og:image", imageUrl, true);
+      updateMetaTag("og:image:width", "500", true);
+      updateMetaTag("og:image:height", "750", true);
+      updateMetaTag("og:type", "video.movie", true);
+      updateMetaTag("twitter:card", "summary_large_image");
+      updateMetaTag("twitter:title", title);
+      updateMetaTag("twitter:description", description);
+      updateMetaTag("twitter:image", imageUrl);
+      updateMetaTag("apple-mobile-web-app-title", movieRecord.name);
+    }
+
+    // 清理函数：当组件卸载时恢复默认favicon
+    return () => {
+      // 恢复默认favicon
+      const existingFavicon = document.querySelector(
+        'link[rel="icon"]'
+      ) as HTMLLinkElement;
+      if (existingFavicon) {
+        existingFavicon.remove();
+      }
+
+      const defaultFavicon = document.createElement("link");
+      defaultFavicon.rel = "icon";
+      defaultFavicon.href = "/favicon.ico";
+      document.head.appendChild(defaultFavicon);
+
+      // 恢复默认apple-touch-icon
+      const existingAppleIcon = document.querySelector(
+        'link[rel="apple-touch-icon"]'
+      ) as HTMLLinkElement;
+      if (existingAppleIcon) {
+        existingAppleIcon.remove();
+      }
+
+      const defaultAppleIcon = document.createElement("link");
+      defaultAppleIcon.rel = "apple-touch-icon";
+      defaultAppleIcon.href = "/logo192.png";
+      document.head.appendChild(defaultAppleIcon);
+    };
+  }, [movieRecord]);
 
   return (
     <div className="py-8">

@@ -1,3 +1,4 @@
+import { HeadContent } from "@tanstack/react-router";
 import { TanstackDevtools } from "@tanstack/react-devtools";
 import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
@@ -15,6 +16,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => (
     <>
       <NuqsAdapter>
+        <HeadContent />
         <Outlet />
       </NuqsAdapter>
       {import.meta.env.DEV && (
