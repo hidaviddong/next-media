@@ -3,3 +3,4 @@ export * from "./scan.js";
 export * from "./movie.js";
 export * from "./chat.js";
 export * from "./user.js";
+export * from "./health.js";

@@ -5,6 +5,7 @@ import { logger } from "hono/logger";
 import { customLogger, authMiddleware } from "./middleware/index.js";
 import { WEB_BASE_URL, API_PORT } from "@next-media/configs/constant";
 import {
+  healthRoute,
   authRoute,
   scanRoute,
   movieRoute,
@@ -13,10 +14,8 @@ import {
 } from "./routes/index.js";
 import type { Variables } from "./type.js";
 
-const app = new Hono<{ Variables: Variables }>().basePath("/api");
-
-export const routes = app
-  .get("/health", (c) => c.json({ message: "OK" }))
+const app = new Hono<{ Variables: Variables }>()
+  .basePath("/api")
   .use(
     cors({
       origin: WEB_BASE_URL,
@@ -25,11 +24,14 @@ export const routes = app
   )
   .use(logger(customLogger))
   .use("*", authMiddleware)
+  .route("/health", healthRoute)
   .route("/auth", authRoute)
   .route("/scan", scanRoute)
   .route("/user", userRoute)
   .route("/movie", movieRoute)
   .route("/chat", chatRoute);
+
+export const routes = app;
 
 serve(
   {
