@@ -3,7 +3,7 @@
 # 1) Dependencies layer for caching
 FROM node:20-alpine AS deps
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@10.15.1 --activate
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Copy only manifest files to maximize layer cache
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -20,7 +20,7 @@ RUN pnpm install --frozen-lockfile
 # 2) Builder: compile all workspaces (web uses built packages)
 FROM node:20-alpine AS builder
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@10.15.1 --activate
+RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=deps /app/node_modules /app/node_modules
 COPY --from=deps /app/pnpm-lock.yaml /app/pnpm-lock.yaml
 COPY --from=deps /app/pnpm-workspace.yaml /app/pnpm-workspace.yaml
